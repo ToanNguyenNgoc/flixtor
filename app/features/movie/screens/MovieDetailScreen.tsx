@@ -73,8 +73,8 @@ function extractYoutubeVideoId(url?: string): string | null {
 }
 
 export default function MovieDetailScreen() {
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<Route>();
+  const navigation = useNavigation() as unknown as Nav;
+  const route = useRoute() as unknown as Route;
   const { slug } = route.params;
   const { width } = useWindowDimensions();
 

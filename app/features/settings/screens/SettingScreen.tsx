@@ -65,7 +65,7 @@ const ApiServerOptionRow = memo(function ApiServerOptionRow({
 
 export default function SettingScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<Nav>();
+  const navigation = useNavigation() as unknown as Nav;
   const queryClient = useQueryClient();
   const [selectedServer, setSelectedServer] = useState<ApiServerKey>(DEFAULT_API_SERVER_KEY);
   const [isLoading, setIsLoading] = useState(true);

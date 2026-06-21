@@ -8,11 +8,17 @@ import { Colors, Spacing, Typography } from "@/config/theme";
 
 const Tab = createBottomTabNavigator<BrandStackParamList>();
 
+function getTabIconColor(color: unknown) {
+  return typeof color === 'string' ? color : Colors.primaryLight;
+}
+
 export const BrandBottomNavigator: FC = () => {
   return (
     <Tab.Navigator
+      implementation="custom"
       screenOptions={{
         headerShown: false,
+        inactiveBehavior: 'none',
         tabBarStyle:{
           paddingTop: Spacing.sm
         },
@@ -20,7 +26,6 @@ export const BrandBottomNavigator: FC = () => {
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: Typography.fontWeight.medium,
-          marginTop: 4,
         },
       }}
     >
@@ -29,7 +34,7 @@ export const BrandBottomNavigator: FC = () => {
         component={BrandHomeScreen}
         options={{
           tabBarLabel: 'Trang chủ',
-          tabBarIcon: ({ color }) => <Icon icon="Home" color={color} />
+          tabBarIcon: ({ color }) => <Icon icon="Home" color={getTabIconColor(color)} />
         }}
       />
       <Tab.Screen
@@ -37,7 +42,7 @@ export const BrandBottomNavigator: FC = () => {
         component={BrandAppointmentScreen}
         options={{
           tabBarLabel: 'Lịch hẹn',
-          tabBarIcon: ({ color }) => <Icon icon="Calendar" color={color} />
+          tabBarIcon: ({ color }) => <Icon icon="Calendar" color={getTabIconColor(color)} />
         }}
       />
       <Tab.Screen
@@ -45,7 +50,7 @@ export const BrandBottomNavigator: FC = () => {
         component={BrandProfileScreen}
         options={{
           tabBarLabel: 'Cá nhân',
-          tabBarIcon: ({ color }) => <Icon icon="User2" color={color} />
+          tabBarIcon: ({ color }) => <Icon icon="User2" color={getTabIconColor(color)} />
         }}
       />
     </Tab.Navigator>

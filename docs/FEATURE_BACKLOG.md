@@ -224,6 +224,48 @@
 - **Files dự kiến**: `app/features/search/screens/SearchScreen.tsx`
 - **Priority**: low
 
+### React Navigation 8 Stable Upgrade Pass
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-06-21)
+- **Mô tả**: Khi React Navigation 8 ra stable, chạy thêm một vòng nâng từ alpha lên stable để bỏ dependency prerelease, rà lại breaking changes mới và cập nhật các peer dependency theo bản chính thức.
+- **Files dự kiến**: `package.json`, `package-lock.json`, `app/navigation/*`
+- **Priority**: high
+
+### Native Bottom Tabs Evaluation
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-06-21)
+- **Mô tả**: Đánh giá việc chuyển từ `implementation="custom"` sang native bottom tabs mặc định của 8.x để tận dụng performance và hành vi platform-native, kèm audit lại icon, label và header behavior.
+- **Files dự kiến**: `app/navigation/MainNavigator.tsx`, `app/brand/navigator/BrandBottomNavigator.tsx`
+- **Priority**: medium
+
+### Shared Typed Navigation Helpers
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-06-21)
+- **Mô tả**: Tạo các helper/hook typed navigation dùng chung để gom pattern `useNavigation() as ...` và `useRoute() as ...`, giúp screen code gọn hơn và giảm lặp cast thủ công.
+- **Files dự kiến**: `app/navigation/types.ts`, `app/navigation/hooks.ts`, các screen đang dùng navigation hooks
+- **Priority**: medium
+
+### React Navigation Alpha Dependency Alignment
+- **Status**: proposed
+- **Nguồn**: react-navigation runtime fix follow-up (2026-06-21)
+- **Mô tả**: Rà lại bộ version `react`, `react-native`, `react-native-screens` và các transitive alpha của React Navigation để giảm số patch tạm thời cho `ActivityView` và các API Fabric/new React còn lệch phiên bản.
+- **Files dự kiến**: `package.json`, `package-lock.json`, `patches/`, có thể thêm ghi chú vào `docs/`
+- **Priority**: high
+
+### React 19 Peer Compatibility Cleanup
+- **Status**: proposed
+- **Nguồn**: dependency audit follow-up (2026-06-21)
+- **Mô tả**: Nâng hoặc thay thế các package còn peer mismatch với `react@19.1.0`, ưu tiên `@tanstack/react-query` và `react-native-fast-image`, để `npm ls` sạch hơn và giảm rủi ro runtime âm thầm.
+- **Files dự kiến**: `package.json`, `package-lock.json`, các screen/hook dùng React Query hoặc image wrapper nếu cần chỉnh API
+- **Priority**: high
+
+### Brand Navigator Liquid Glass Parity
+- **Status**: proposed
+- **Nguồn**: MainNavigator liquid glass follow-up (2026-06-21)
+- **Mô tả**: Áp dụng visual treatment tương tự cho `BrandBottomNavigator` để hai nhánh điều hướng chính có trải nghiệm tab bar nhất quán trên iOS.
+- **Files dự kiến**: `app/brand/navigator/BrandBottomNavigator.tsx`, có thể cần theme token bổ sung nếu muốn tách màu brand riêng
+- **Priority**: medium
+
 ### Voice Search Entry Point
 - **Status**: proposed
 - **Nguồn**: search back button follow-up (2026-05-14)
@@ -846,3 +888,31 @@
 - **Mô tả**: Cho phép cấu hình cooldown re-check khi app resume từ remote config hoặc env để team vận hành cân bằng giữa độ phản ứng và số lượng request.
 - **Files dự kiến**: `app/hooks/useSystemStatus.ts`, `app/config/env.ts`, có thể thêm remote config layer sau này
 - **Priority**: low
+
+### Clean Track Player Patch Package
+- **Status**: proposed
+- **Nguồn**: iOS build fix follow-up (2026-06-21)
+- **Mô tả**: Dọn lại `patches/react-native-track-player+4.1.2.patch` để chỉ giữ source changes cần thiết thay vì build artifacts, giúp `postinstall` không còn báo lỗi và mọi clean install ổn định hơn.
+- **Files dự kiến**: `patches/react-native-track-player+4.1.2.patch`, `node_modules/react-native-track-player/*` khi regenerate patch
+- **Priority**: high
+
+### iOS Smoke Build Command
+- **Status**: proposed
+- **Nguồn**: iOS build fix follow-up (2026-06-21)
+- **Mô tả**: Thêm một lệnh build simulator tối thiểu cho iOS để phát hiện sớm lỗi native compile sau khi nâng dependency như React Navigation hoặc React Native libraries.
+- **Files dự kiến**: `package.json`, có thể thêm `docs/` hoặc CI config liên quan
+- **Priority**: medium
+
+### Navigation Runtime Smoke Test
+- **Status**: proposed
+- **Nguồn**: react-navigation runtime fix follow-up (2026-06-21)
+- **Mô tả**: Tạo một bước smoke test cho luồng mount `RootNavigator`, chuyển tab và push `native-stack` để phát hiện sớm các lỗi runtime kiểu `ActivityView` sau mỗi lần nâng dependency navigation hoặc React Native.
+- **Files dự kiến**: `docs/`, có thể thêm `package.json` hoặc e2e test setup nếu repo bổ sung automation
+- **Priority**: medium
+
+### React Native 0.83 Upgrade Prep
+- **Status**: proposed
+- **Nguồn**: iOS build fix follow-up (2026-06-21)
+- **Mô tả**: Lên kế hoạch nâng React Native khỏi `0.81.5` để bỏ các patch tương thích tạm thời cho React Navigation 8 alpha và giảm chênh lệch API Fabric/new architecture.
+- **Files dự kiến**: `package.json`, `ios/`, `android/`, các patch trong `patches/`
+- **Priority**: high

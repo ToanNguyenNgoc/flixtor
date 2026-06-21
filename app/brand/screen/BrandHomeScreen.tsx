@@ -4,11 +4,8 @@ import { BrandHeader } from "../component";
 import { PressableIconSvg } from "@/components/common";
 import { muiColor } from "@/themes";
 import { Colors, Spacing } from "@/config/theme";
-import { useNavigation } from "@react-navigation/native";
-import { BrandStackParamList } from "../BrandNavigator";
 
 export const BrandHomeScreen: FC = () => {
-  const navigate = useNavigation();
   return (
     <View>
       <BrandHeader

@@ -1,0 +1,35 @@
+diff --git a/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.esm.js b/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.esm.js
+index 8ac4f16..384fc95 100644
+--- a/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.esm.js
++++ b/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.esm.js
+@@ -1,5 +1,5 @@
+ import { notifyManager } from '@tanstack/query-core';
+-import { unstable_batchedUpdates } from './reactBatchedUpdates.esm.js';
++import { unstable_batchedUpdates } from './reactBatchedUpdates.native.esm.js';
+ 
+ notifyManager.setBatchNotifyFunction(unstable_batchedUpdates);
+ //# sourceMappingURL=setBatchUpdatesFn.esm.js.map
+diff --git a/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.js b/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.js
+index a009d8e..3ec2c3b 100644
+--- a/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.js
++++ b/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.js
+@@ -1,7 +1,7 @@
+ 'use strict';
+ 
+ var queryCore = require('@tanstack/query-core');
+-var reactBatchedUpdates = require('./reactBatchedUpdates');
++var reactBatchedUpdates = require('./reactBatchedUpdates.native');
+ 
+ queryCore.notifyManager.setBatchNotifyFunction(reactBatchedUpdates.unstable_batchedUpdates);
+ //# sourceMappingURL=setBatchUpdatesFn.js.map
+diff --git a/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.mjs b/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.mjs
+index 1c72948..40675fe 100644
+--- a/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.mjs
++++ b/node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.mjs
+@@ -1,5 +1,5 @@
+ import { notifyManager } from '@tanstack/query-core';
+-import { unstable_batchedUpdates } from './reactBatchedUpdates.mjs';
++import { unstable_batchedUpdates } from './reactBatchedUpdates.native.mjs';
+ 
+ notifyManager.setBatchNotifyFunction(unstable_batchedUpdates);
+ //# sourceMappingURL=setBatchUpdatesFn.mjs.map

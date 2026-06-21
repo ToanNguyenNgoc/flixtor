@@ -23,7 +23,7 @@ interface MovieCardProps {
 }
 
 function MovieCard({ movie, onPress, width = CARD_WIDTH, height = CARD_HEIGHT }: MovieCardProps) {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation() as unknown as NativeStackNavigationProp<RootStackParamList>;
 
   const handlePress = useCallback(() => {
     if (onPress) {

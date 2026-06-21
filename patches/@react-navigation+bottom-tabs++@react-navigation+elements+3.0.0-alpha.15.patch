@@ -1,0 +1,145 @@
+diff --git a/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js b/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js
+index 2043cf5..8d5d17b 100644
+--- a/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js
++++ b/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js
+@@ -1,7 +1,7 @@
+ "use strict";
+ 
+ import { Activity, useEffect, useState } from 'react';
+-import { NativeComponentRegistry } from 'react-native';
++import * as NativeComponentRegistry from 'react-native/Libraries/NativeComponent/NativeComponentRegistry';
+ 
+ // eslint-disable-next-line import-x/extensions
+ 
+@@ -26,25 +26,28 @@ export function ActivityView({
+   }, [delay, mode]);
+   const display = visible ? 'flex' : 'none';
+   const activityMode = mode !== 'paused' || delay && delayedMode !== 'paused' ? 'visible' : 'hidden';
++  const content = /*#__PURE__*/_jsx(Container, {
++    inert: mode !== 'normal',
++    style: {
++      ...style,
++      /**
++       * Fall back to regular rendering on React builds where `Activity`
++       * isn't available yet.
++       */
++      display
++    },
++    children: children
++  });
++  if (!Activity) {
++    return content;
++  }
+   return /*#__PURE__*/_jsx(Activity, {
+     mode: activityMode,
+     children: /*#__PURE__*/_jsx(ActivityContentView, {
+       style: {
+         display: 'contents'
+       },
+-      children: /*#__PURE__*/_jsx(Container, {
+-        inert: mode !== 'normal',
+-        style: {
+-          ...style,
+-          /**
+-           * The visibility of the nested view is controlled by `Activity`
+-           * It'll be overridden to `display: 'none'` when `mode="hidden"` regardless of what we set
+-           * So we set the visibility on another view instead
+-           */
+-          display
+-        },
+-        children: children
+-      })
++      children: content
+     })
+   });
+ }
+@@ -63,5 +66,7 @@ const VIEW_CONFIG = {
+     style: STYLE
+   }
+ };
+-const ActivityContentView = NativeComponentRegistry.get('ReactNavigationActivityContentView', () => VIEW_CONFIG);
++const ACTIVITY_CONTENT_VIEW_KEY = '__reactNavigationActivityContentView';
++const globalActivityContentView = globalThis;
++const ActivityContentView = globalActivityContentView[ACTIVITY_CONTENT_VIEW_KEY] ?? (globalActivityContentView[ACTIVITY_CONTENT_VIEW_KEY] = NativeComponentRegistry.get('ReactNavigationActivityContentView', () => VIEW_CONFIG));
+ //# sourceMappingURL=ActivityView.native.js.map
+diff --git a/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx b/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx
+index 43afd6f..562d73b 100644
+--- a/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx
++++ b/node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx
+@@ -1,9 +1,9 @@
+ import { Activity, useEffect, useState } from 'react';
+ import {
+   type HostComponent,
+-  NativeComponentRegistry,
+   type ViewProps,
+ } from 'react-native';
++import * as NativeComponentRegistry from 'react-native/Libraries/NativeComponent/NativeComponentRegistry';
+ 
+ // eslint-disable-next-line import-x/extensions
+ import type { Props } from './ActivityView.tsx';
+@@ -36,23 +36,30 @@ export function ActivityView({
+       ? 'visible'
+       : 'hidden';
+ 
++  const content = (
++    <Container
++      inert={mode !== 'normal'}
++      style={{
++        ...style,
++        /**
++         * Fall back to regular rendering on React builds where `Activity`
++         * isn't available yet.
++         */
++        display,
++      }}
++    >
++      {children}
++    </Container>
++  );
++
++  if (!Activity) {
++    return content;
++  }
++
+   return (
+     <Activity mode={activityMode}>
+       <ActivityContentView style={{ display: 'contents' }}>
+-        <Container
+-          inert={mode !== 'normal'}
+-          style={{
+-            ...style,
+-            /**
+-             * The visibility of the nested view is controlled by `Activity`
+-             * It'll be overridden to `display: 'none'` when `mode="hidden"` regardless of what we set
+-             * So we set the visibility on another view instead
+-             */
+-            display,
+-          }}
+-        >
+-          {children}
+-        </Container>
++        {content}
+       </ActivityContentView>
+     </Activity>
+   );
+@@ -83,8 +90,16 @@ type ActivityContentViewProps = Omit<ViewProps, 'style'> & {
+     | undefined;
+ };
+ 
++const ACTIVITY_CONTENT_VIEW_KEY = '__reactNavigationActivityContentView';
++
++const globalActivityContentView = globalThis as typeof globalThis & {
++  [ACTIVITY_CONTENT_VIEW_KEY]?: HostComponent<ActivityContentViewProps>;
++};
++
+ const ActivityContentView: HostComponent<ActivityContentViewProps> =
+-  NativeComponentRegistry.get<ActivityContentViewProps>(
+-    'ReactNavigationActivityContentView',
+-    () => VIEW_CONFIG
+-  );
++  globalActivityContentView[ACTIVITY_CONTENT_VIEW_KEY] ??
++  (globalActivityContentView[ACTIVITY_CONTENT_VIEW_KEY] =
++    NativeComponentRegistry.get<ActivityContentViewProps>(
++      'ReactNavigationActivityContentView',
++      () => VIEW_CONFIG
++    ));

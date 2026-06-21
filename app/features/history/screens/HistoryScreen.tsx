@@ -48,7 +48,7 @@ interface HistoryGridItem extends ResumeMovieCardItem {
 }
 
 export default function HistoryScreen() {
-  const navigation = useNavigation<Nav>();
+  const navigation = useNavigation() as unknown as Nav;
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const deleteHistory = useDeleteUserHistory();

@@ -1,0 +1,13 @@
+diff --git a/node_modules/@react-navigation/native/ios/ReactNavigationCornerInsetView.mm b/node_modules/@react-navigation/native/ios/ReactNavigationCornerInsetView.mm
+index b1359e9..a79e9df 100644
+--- a/node_modules/@react-navigation/native/ios/ReactNavigationCornerInsetView.mm
++++ b/node_modules/@react-navigation/native/ios/ReactNavigationCornerInsetView.mm
+@@ -176,7 +176,7 @@ - (void)applyCornerInset:(CGFloat)cornerInset
+         return;
+     }
+ 
+-    _state->updateState(ReactNavigationCornerInsetViewState(cornerInset), facebook::react::EventQueue::UpdateMode::unstable_Immediate);
++    _state->updateState(ReactNavigationCornerInsetViewState(cornerInset));
+ }
+ 
+ @end

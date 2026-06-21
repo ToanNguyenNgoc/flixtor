@@ -75,7 +75,7 @@ function ActionRow({
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<Nav>();
+  const navigation = useNavigation() as unknown as Nav;
   const user = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const isStoreLoading = useAuthStore(state => state.isLoading);

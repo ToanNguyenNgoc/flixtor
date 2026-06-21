@@ -265,6 +265,149 @@
 
 **Lý do:** User yêu cầu thay modal filter hiện tại bằng thư viện `@gorhom/bottom-sheet` để có UX bottom sheet native hơn và gesture tốt hơn.
 
+## 2026-06-21 — React Navigation upgrade lên 8 alpha tương thích RN 0.81
+
+**Files đã sửa:**
+- `package.json`
+- `package-lock.json`
+- `app/navigation/MainNavigator.tsx`
+- `app/brand/navigator/BrandBottomNavigator.tsx`
+- `app/brand/BrandNavigator.tsx`
+- `app/brand/screen/BrandHomeScreen.tsx`
+- `app/components/movie/MovieCard.tsx`
+- `app/features/auth/hooks/useAuthGoogle.ts`
+- `app/features/auth/screens/LoginScreen.tsx`
+- `app/features/auth/screens/RegisterScreen.tsx`
+- `app/features/auth/screens/ForgotPasswordScreen.tsx`
+- `app/features/auth/screens/ResetPasswordScreen.tsx`
+- `app/features/favorites/screens/FavoritesScreen.tsx`
+- `app/features/filter/screens/FilterScreen.tsx`
+- `app/features/history/screens/HistoryScreen.tsx`
+- `app/features/home/screens/HomeScreen.tsx`
+- `app/features/movie/screens/MovieDetailScreen.tsx`
+- `app/features/player/screens/WatchScreen.tsx`
+- `app/features/profile/screens/ProfileScreen.tsx`
+- `app/features/search/screens/SearchScreen.tsx`
+- `app/features/settings/screens/SettingScreen.tsx`
+
+**Chi tiết:**
+- Nâng `@react-navigation/native`, `@react-navigation/bottom-tabs`, `@react-navigation/native-stack`, `@react-navigation/stack` lên `8.0.0-alpha.14`.
+- Pin `react-native-screens` về `4.20.0` để giữ tương thích với `react-native 0.81.5`.
+- Thêm `overrides` cho `@react-navigation/core`, `@react-navigation/elements`, `@react-navigation/routers` để tránh npm tự kéo transitive alpha mới hơn vốn yêu cầu `react 19.2+`.
+- Giữ `bottom-tabs` chạy với `implementation="custom"` để tránh breaking change của native tabs mặc định trong 8.x và preserve UI tab bar hiện tại.
+- Đổi toàn bộ typed hooks `useNavigation<...>()` và `useRoute<...>()` sang kiểu assertion `useNavigation() as ...`, `useRoute() as ...` theo API TypeScript của React Navigation 8.
+- Dọn thêm một số unused imports/props trong cụm `brand` để lint theo scope các file navigation vừa sửa chạy sạch.
+
+**Lý do:** User yêu cầu bắt buộc nâng toàn bộ `@react-navigation/*` lên nhánh 8.x nhưng vẫn giữ repo tương thích với nền RN hiện tại.
+
+## 2026-06-21 — Fix iOS build lỗi ReactNavigationCornerInsetView với RN 0.81
+
+**Files đã sửa:**
+- `node_modules/@react-navigation/native/ios/ReactNavigationCornerInsetView.mm`
+- `patches/@react-navigation+native+8.0.0-alpha.14.patch`
+
+**Chi tiết:**
+- Vá native iOS source của `@react-navigation/native` để bỏ tham số `facebook::react::EventQueue::UpdateMode::unstable_Immediate` khi gọi `_state->updateState(...)`.
+- Giữ lại chữ ký `updateState(...)` một tham số tương thích với React Native `0.81.5`, nơi `EventQueue::UpdateMode` chưa tồn tại.
+- Tạo patch-package cho `@react-navigation/native@8.0.0-alpha.14` để fix này có thể được áp lại sau các lần cài dependency tiếp theo.
+
+**Lý do:** iOS build fail tại `ReactNavigationCornerInsetView.mm` vì React Navigation 8 alpha dùng API Fabric mới hơn bản React Native hiện tại của repo.
+
+## 2026-06-21 — Fix runtime redbox ActivityView của React Navigation 8 alpha trên RN 0.81
+
+**Files đã sửa:**
+- `node_modules/@react-navigation/native-stack/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/native-stack/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `node_modules/@react-navigation/stack/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/stack/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `patches/@react-navigation+native-stack++@react-navigation+elements+3.0.0-alpha.15.patch`
+- `patches/@react-navigation+stack++@react-navigation+elements+3.0.0-alpha.15.patch`
+- `patches/@react-navigation+bottom-tabs++@react-navigation+elements+3.0.0-alpha.15.patch`
+
+**Chi tiết:**
+- Vá `ActivityView.native` của 3 bản `@react-navigation/elements` đang nằm lồng bên trong `native-stack`, `stack` và `bottom-tabs`.
+- Đổi import `NativeComponentRegistry` từ export root của `react-native` sang internal path `react-native/Libraries/NativeComponent/NativeComponentRegistry`, tương thích với `react-native 0.81.5`.
+- Tạo patch-package riêng cho từng nested dependency để clean install vẫn áp lại fix runtime này tự động qua `postinstall`.
+
+**Lý do:** App redbox ngay khi mount `NativeStackView` với lỗi `Cannot read property 'get' of undefined` do `NativeComponentRegistry` không còn được export ở root package của React Native 0.81.
+
+## 2026-06-21 — Fix render error ActivityView khi `react@19.1.0` chưa có `Activity`
+
+**Files đã sửa:**
+- `node_modules/@react-navigation/native-stack/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/native-stack/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `node_modules/@react-navigation/stack/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/stack/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `patches/@react-navigation+native-stack++@react-navigation+elements+3.0.0-alpha.15.patch`
+- `patches/@react-navigation+stack++@react-navigation+elements+3.0.0-alpha.15.patch`
+- `patches/@react-navigation+bottom-tabs++@react-navigation+elements+3.0.0-alpha.15.patch`
+
+**Chi tiết:**
+- Giữ nguyên behavior cũ của `ActivityView` nếu runtime có sẵn `React.Activity`.
+- Thêm fallback render thường bằng `Container` khi `Activity` là `undefined`, để React Navigation 8 alpha vẫn mount được trên stack dependency hiện tại của repo.
+- Regenerate lại 3 patch-package nested để patch runtime hiện tại luôn bao gồm cả fix `NativeComponentRegistry` lẫn fix thiếu `Activity`.
+
+**Lý do:** App chuyển sang lỗi `Element type is invalid` trong `ActivityView` vì `@react-navigation/elements@3.0.0-alpha.15` kỳ vọng `react` export `Activity`, nhưng repo đang dùng `react 19.1.0` chưa có API đó.
+
+## 2026-06-21 — Hardening React Navigation 8 alpha runtime + dependency cleanup
+
+**Files đã sửa:**
+- `app/navigation/RootNavigator.tsx`
+- `app/navigation/AuthNavigator.tsx`
+- `app/navigation/MainNavigator.tsx`
+- `app/brand/BrandNavigator.tsx`
+- `app/brand/navigator/BrandBottomNavigator.tsx`
+- `package.json`
+- `package-lock.json`
+- `node_modules/@react-navigation/native-stack/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/native-stack/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/lib/module/ActivityView.native.js`
+- `node_modules/@react-navigation/bottom-tabs/node_modules/@react-navigation/elements/src/ActivityView.native.tsx`
+- `patches/@react-navigation+native-stack++@react-navigation+elements+3.0.0-alpha.15.patch`
+- `patches/@react-navigation+bottom-tabs++@react-navigation+elements+3.0.0-alpha.15.patch`
+
+**Chi tiết:**
+- Đặt `inactiveBehavior: 'none'` cho các navigator app đang dùng (`native-stack` và `bottom-tabs`) để tránh phụ thuộc vào flow `pause` mới của React Navigation 8 vốn dựa vào `React.Activity`.
+- Vá `ActivityView.native` của `native-stack` và `bottom-tabs` bằng singleton global `__reactNavigationActivityContentView`, nhờ đó nhiều bản sao `@react-navigation/elements` sẽ tái sử dụng cùng một native view registry entry thay vì đăng ký trùng tên `ReactNavigationActivityContentView`.
+- Chuyển `BrandNavigator` sang dùng `NativeStackNavigationProp` và loại bỏ dependency runtime không còn dùng `@react-navigation/stack`.
+- Loại bỏ `react-dom` khỏi direct dependencies vì repo không dùng, và nâng `react-hook-form` từ `7.52.0` lên `7.55.0` để khớp peer requirement của `@hookform/resolvers@5.2.2`.
+- Rà lại compatibility tree bằng `npm ls`; hiện đã bỏ được mismatch trực tiếp của `@react-navigation/stack`, `react-dom`, `react-hook-form`, nhưng vẫn còn các peer mismatch tồn tại sẵn như `@tanstack/react-query@4.33.0` và `react-native-fast-image@8.6.3` với `react@19.1.0`.
+
+**Lý do:** Sau khi nâng React Navigation 8 alpha trên nền `react-native 0.81.5`, app tiếp tục gặp chuỗi lỗi runtime liên quan `ActivityView`. Đồng thời dependency audit cho thấy cần dọn thêm các mismatch trực tiếp để giảm rủi ro ở những lần cài mới.
+
+## 2026-06-21 — Fix Metro resolve `react-dom` từ `@tanstack/react-query` trên React Native
+
+**Files đã sửa:**
+- `node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.mjs`
+- `node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.esm.js`
+- `node_modules/@tanstack/react-query/build/lib/setBatchUpdatesFn.js`
+- `patches/@tanstack+react-query+4.33.0.patch`
+
+**Chi tiết:**
+- Vá build output của `@tanstack/react-query@4.33.0` để `setBatchUpdatesFn` luôn import `reactBatchedUpdates.native.*` thay vì `reactBatchedUpdates.*`.
+- Nhờ đó Metro trên React Native không còn đi resolve `react-dom` từ entry ESM `.mjs` của package khi load React Query.
+- Giữ fix ở mức tối thiểu, chỉ đổi đúng import target vì package đã có sẵn các file native variant tương ứng.
+
+**Lý do:** Sau khi bỏ `react-dom` khỏi direct dependencies, Metro báo `Unable to resolve module react-dom` từ `@tanstack/react-query/build/lib/reactBatchedUpdates.mjs` do package build không tự chọn nhánh native trong entry hiện tại.
+
+## 2026-06-21 — Thêm Liquid Glass cho tab bar của MainNavigator
+
+**Files đã sửa:**
+- `app/navigation/MainNavigator.tsx`
+
+**Chi tiết:**
+- Điều chỉnh `MainNavigator` để chỉ dùng `implementation="native"` khi iOS thực sự hỗ trợ Liquid Glass.
+- Khi native Liquid Glass khả dụng, bỏ custom tab bar background để React Navigation dùng `UITabBarController` appearance của hệ thống.
+- Đổi icon của nhánh native từ `tabBarSystemItem` sang `tabBarIcon` kiểu `sfSymbol` cho từng tab (`house.fill`, `magnifyingglass`, `sparkles`, `person.fill`) để liquid-glass tab bar dùng đúng bộ icon SF Symbols.
+- Ép `tabBarStyle.backgroundColor` và `shadowColor` về `transparent`, đồng thời tắt `tabBarMinimizeBehavior` trong nhánh native để giảm hiện tượng tab bar chớp nền trắng rồi mới về trong suốt khi đổi tab.
+- Các thiết bị còn lại tiếp tục dùng `implementation="custom"` cùng style tab bar hiện có để giữ tương thích và UI ổn định.
+
+**Lý do:** User yêu cầu cập nhật `MainNavigator` để tận dụng Liquid Glass trong cụm bottom tabs mà vẫn giữ fallback an toàn theo platform/runtime support.
+
 ## 2026-05-14 — Fix Filter Bottom Sheet bị co chiều cao
 
 **Files đã sửa:**

@@ -24,7 +24,7 @@ import type { RootStackParamList } from '@/navigation/types';
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation() as unknown as NativeStackNavigationProp<RootStackParamList>;
   const {
     email,
     errorMessage,

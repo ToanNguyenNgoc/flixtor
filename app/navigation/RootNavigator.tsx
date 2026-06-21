@@ -15,7 +15,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        inactiveBehavior: 'none',
+      }}
+    >
       <Stack.Screen
         name="RootTabs"
         component={MainNavigator}

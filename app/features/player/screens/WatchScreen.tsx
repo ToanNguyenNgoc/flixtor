@@ -366,8 +366,8 @@ const QualityDrawer = React.memo(function QualityDrawer({
 // ─── WatchScreen ─────────────────────────────────────────────────────────────
 
 export default function WatchScreen() {
-  const navigation = useNavigation<WatchNav>();
-  const route = useRoute<WatchRoute>();
+  const navigation = useNavigation() as unknown as WatchNav;
+  const route = useRoute() as unknown as WatchRoute;
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const queryClient = useQueryClient();

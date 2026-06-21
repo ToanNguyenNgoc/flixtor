@@ -20,8 +20,8 @@ type Route = RouteProp<MainTabParamList, 'Search'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SearchScreen() {
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<Route>();
+  const navigation = useNavigation() as unknown as Nav;
+  const route = useRoute() as unknown as Route;
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
   const [keyword, setKeyword] = useState(route.params?.keyword ?? '');
