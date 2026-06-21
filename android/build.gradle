@@ -32,7 +32,7 @@ allprojects {
                 // Do not change the username below.
                 // This should always be `mapbox` (not your username).
                 username = "mapbox"
-                password = "sk.eyJ1IjoidG9hbjA2MDExOTk4IiwiYSI6ImNsb2NhcG9oYTFjOXAycG82bTdiOG9rZXgifQ.ljYk7vDqhUHqv00DtBt27Q"
+                password = ""
             }
         }
     }
