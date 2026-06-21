@@ -1,0 +1,5 @@
+import * as React from "react";
+import Svg, { Path, Text as SvgText } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const RepeatOne = (props: SvgProps) => <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" {...props}><Path d="M17 1L21 5L17 9" stroke={props.color ?? '#374957'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /><Path d="M3 11V9C3 7.93913 3.42143 6.92172 4.17157 6.17157C4.92172 5.42143 5.93913 5 7 5H21" stroke={props.color ?? '#374957'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /><Path d="M7 23L3 19L7 15" stroke={props.color ?? '#374957'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /><Path d="M21 13V15C21 16.0609 20.5786 17.0783 19.8284 17.8284C19.0783 18.5786 18.0609 19 17 19H3" stroke={props.color ?? '#374957'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /><SvgText x="12" y="14" textAnchor="middle" fontSize="8" fontWeight="bold" fill={props.color ?? '#374957'}>1</SvgText></Svg>;
+export default RepeatOne;

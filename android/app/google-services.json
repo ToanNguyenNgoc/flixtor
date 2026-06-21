@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "326878886038",
+    "project_id": "dbmetronic",
+    "storage_bucket": "dbmetronic.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:326878886038:android:4a169cf96faf526d346ab7",
+        "android_client_info": {
+          "package_name": "com.myspa.flixtor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "326878886038-sdu53a1nn350voroq1lk4j97j09fi3kk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.myspa.flixtor",
+            "certificate_hash": "ed39582c150ebbafd4b345e9fbc439779d902fb4"
+          }
+        },
+        {
+          "client_id": "326878886038-pi89vada57s6dfv398l6fttk4n3vrd3g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvcOTFApE_yDeCbh4bixQaq5897Idwr8c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "326878886038-pi89vada57s6dfv398l6fttk4n3vrd3g.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "326878886038-9pm48nq0rniilcovitacrek2nf2488c5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.myspa.flixtor"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

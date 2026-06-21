@@ -1,0 +1,95 @@
+# Resolve react_native_pods.rb with node to allow for hoisting
+# require Pod::Executable.execute_command('node', ['-p',
+#   'require.resolve(
+#     "react-native/scripts/react_native_pods.rb",
+#     {paths: [process.argv[1]]},
+#   )', __dir__]).strip
+
+# handle for react permissions
+
+def node_require(script)
+  require Pod::Executable.execute_command('node', ['-p',
+    "require.resolve(
+      '#{script}',
+      {paths: [process.argv[1]]},
+    )", __dir__]).strip
+end
+
+
+node_require('react-native/scripts/react_native_pods.rb')
+node_require('react-native-permissions/scripts/setup.rb')
+
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
+
+
+# linkage = ENV['USE_FRAMEWORKS']
+# if linkage != nil
+#   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+#   use_frameworks! :linkage => linkage.to_sym
+# end
+
+use_frameworks! :linkage => :static
+$RNFirebaseAsStaticFramework = true
+
+target 'Flixtor' do
+  config = use_native_modules!
+
+  # handle for react permissions
+  setup_permissions([
+    'LocationWhenInUse',
+    'FaceID',
+    'SpeechRecognition',
+    'Microphone',
+    'Camera',
+    'PhotoLibrary',
+    'PhotoLibraryAddOnly',
+  ])
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  pre_install do |installer|
+    $RNMapboxMaps.pre_install(installer)
+  end
+
+  post_install do |installer|
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
+
+    $RNMapboxMaps.post_install(installer)
+
+    installer.pods_project.targets.each do |t|
+      t.build_configurations.each do |c|
+        next unless ['Debug', 'Profile'].include?(c.name)
+        defs = c.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+        defs = [defs] unless defs.is_a?(Array)
+        defs << 'RCT_ENABLE_INSPECTOR=1'
+        c.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
+      end
+    end
+
+    # Fix: fmt consteval error with Xcode 16+ / newer Clang (stricter C++20 consteval enforcement)
+    # Forces the fmt pod to compile with C++17, which avoids the consteval issue.
+    installer.pods_project.targets.each do |target|
+      if target.name == 'fmt'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+          defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+          defs = [defs] unless defs.is_a?(Array)
+          defs << 'FMT_USE_CONSTEVAL=0'
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
+        end
+      end
+    end
+
+  end
+end

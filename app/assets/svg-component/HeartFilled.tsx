@@ -1,0 +1,5 @@
+import * as React from "react";
+import Svg, { Path } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const HeartFilled = (props: SvgProps) => <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" {...props}><Path d="M20.84 4.61C20.3292 4.09924 19.7228 3.69397 19.0554 3.41684C18.3879 3.13971 17.6725 2.99672 16.95 2.99672C16.2275 2.99672 15.5121 3.13971 14.8446 3.41684C14.1772 3.69397 13.5708 4.09924 13.06 4.61L12 5.67L10.94 4.61C9.9083 3.57831 8.50903 2.99722 7.05 2.99722C5.59096 2.99722 4.1917 3.57831 3.16 4.61C2.1283 5.64169 1.54722 7.04097 1.54722 8.5C1.54722 9.95903 2.1283 11.3583 3.16 12.39L4.22 13.45L12 21.23L19.78 13.45L20.84 12.39C21.3508 11.8792 21.756 11.2728 22.0332 10.6054C22.3103 9.93792 22.4533 9.22249 22.4533 8.5C22.4533 7.77751 22.3103 7.06208 22.0332 6.39464C21.756 5.7272 21.3508 5.12076 20.84 4.61Z" fill={props.color ?? '#f44336'} stroke={props.color ?? '#f44336'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>;
+export default HeartFilled;

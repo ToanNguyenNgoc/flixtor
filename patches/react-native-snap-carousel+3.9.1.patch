@@ -1,0 +1,113 @@
+diff --git a/node_modules/react-native-snap-carousel/src/carousel/Carousel.js b/node_modules/react-native-snap-carousel/src/carousel/Carousel.js
+index dae71a3..0479577 100644
+--- a/node_modules/react-native-snap-carousel/src/carousel/Carousel.js
++++ b/node_modules/react-native-snap-carousel/src/carousel/Carousel.js
+@@ -18,6 +18,7 @@ const IS_IOS = Platform.OS === 'ios';
+ // See: https://facebook.github.io/react-native/blog/2017/02/14/using-native-driver-for-animated.html
+ const AnimatedFlatList = FlatList ? Animated.createAnimatedComponent(FlatList) : null;
+ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
++const viewStylePropType = (ViewPropTypes && ViewPropTypes.style) || PropTypes.any;
+ 
+ // React Native automatically handles RTL layouts; unfortunately, it's buggy with horizontal ScrollView
+ // See https://github.com/facebook/react-native/issues/11960
+@@ -43,8 +44,8 @@ export default class Carousel extends Component {
+         autoplayDelay: PropTypes.number,
+         autoplayInterval: PropTypes.number,
+         callbackOffsetMargin: PropTypes.number,
+-        containerCustomStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
+-        contentContainerCustomStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        containerCustomStyle: viewStylePropType,
++        contentContainerCustomStyle: viewStylePropType,
+         enableMomentum: PropTypes.bool,
+         enableSnap: PropTypes.bool,
+         firstItem: PropTypes.number,
+@@ -61,7 +62,7 @@ export default class Carousel extends Component {
+         scrollEnabled: PropTypes.bool,
+         scrollInterpolator: PropTypes.func,
+         slideInterpolatedStyle: PropTypes.func,
+-        slideStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        slideStyle: viewStylePropType,
+         shouldOptimizeUpdates: PropTypes.bool,
+         swipeThreshold: PropTypes.number,
+         useScrollView: PropTypes.oneOfType([PropTypes.bool, PropTypes.func]),
+diff --git a/node_modules/react-native-snap-carousel/src/pagination/Pagination.js b/node_modules/react-native-snap-carousel/src/pagination/Pagination.js
+index 5c021cf..1203634 100644
+--- a/node_modules/react-native-snap-carousel/src/pagination/Pagination.js
++++ b/node_modules/react-native-snap-carousel/src/pagination/Pagination.js
+@@ -6,6 +6,7 @@ import styles from './Pagination.style';
+ 
+ const IS_IOS = Platform.OS === 'ios';
+ const IS_RTL = I18nManager.isRTL;
++const viewStylePropType = (ViewPropTypes && ViewPropTypes.style) || PropTypes.any;
+ 
+ export default class Pagination extends PureComponent {
+ 
+@@ -14,16 +15,16 @@ export default class Pagination extends PureComponent {
+         dotsLength: PropTypes.number.isRequired,
+         activeOpacity: PropTypes.number,
+         carouselRef: PropTypes.object,
+-        containerStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        containerStyle: viewStylePropType,
+         dotColor: PropTypes.string,
+-        dotContainerStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        dotContainerStyle: viewStylePropType,
+         dotElement: PropTypes.element,
+-        dotStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        dotStyle: viewStylePropType,
+         inactiveDotColor: PropTypes.string,
+         inactiveDotElement: PropTypes.element,
+         inactiveDotOpacity: PropTypes.number,
+         inactiveDotScale: PropTypes.number,
+-        inactiveDotStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        inactiveDotStyle: viewStylePropType,
+         renderDots: PropTypes.func,
+         tappableDots: PropTypes.bool,
+         vertical: PropTypes.bool,
+diff --git a/node_modules/react-native-snap-carousel/src/pagination/PaginationDot.js b/node_modules/react-native-snap-carousel/src/pagination/PaginationDot.js
+index e59d196..e0a04a0 100644
+--- a/node_modules/react-native-snap-carousel/src/pagination/PaginationDot.js
++++ b/node_modules/react-native-snap-carousel/src/pagination/PaginationDot.js
+@@ -2,6 +2,7 @@ import React, { PureComponent } from 'react';
+ import { View, Animated, Easing, TouchableOpacity, ViewPropTypes } from 'react-native';
+ import PropTypes from 'prop-types';
+ import styles from './Pagination.style';
++const viewStylePropType = (ViewPropTypes && ViewPropTypes.style) || PropTypes.any;
+ 
+ export default class PaginationDot extends PureComponent {
+ 
+@@ -12,11 +13,11 @@ export default class PaginationDot extends PureComponent {
+         activeOpacity: PropTypes.number,
+         carouselRef: PropTypes.object,
+         color: PropTypes.string,
+-        containerStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        containerStyle: viewStylePropType,
+         inactiveColor: PropTypes.string,
+-        inactiveStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        inactiveStyle: viewStylePropType,
+         index: PropTypes.number,
+-        style: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        style: viewStylePropType,
+         tappable: PropTypes.bool
+     };
+ 
+diff --git a/node_modules/react-native-snap-carousel/src/parallaximage/ParallaxImage.js b/node_modules/react-native-snap-carousel/src/parallaximage/ParallaxImage.js
+index 8bc774a..e16fc7e 100644
+--- a/node_modules/react-native-snap-carousel/src/parallaximage/ParallaxImage.js
++++ b/node_modules/react-native-snap-carousel/src/parallaximage/ParallaxImage.js
+@@ -4,6 +4,7 @@ import React, { Component } from 'react';
+ import { View, ViewPropTypes, Image, Animated, Easing, ActivityIndicator, findNodeHandle } from 'react-native';
+ import PropTypes from 'prop-types';
+ import styles from './ParallaxImage.style';
++const viewStylePropType = (ViewPropTypes && ViewPropTypes.style) || PropTypes.any;
+ 
+ export default class ParallaxImage extends Component {
+ 
+@@ -16,7 +17,7 @@ export default class ParallaxImage extends Component {
+         sliderHeight: PropTypes.number, // passed from <Carousel />
+         sliderWidth: PropTypes.number, // passed from <Carousel />
+         vertical: PropTypes.bool, // passed from <Carousel />
+-        containerStyle: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
++        containerStyle: viewStylePropType,
+         dimensions: PropTypes.shape({
+             width: PropTypes.number,
+             height: PropTypes.number

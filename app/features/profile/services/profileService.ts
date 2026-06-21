@@ -1,0 +1,2 @@
+// profileService.ts — DEPRECATED
+export {};
