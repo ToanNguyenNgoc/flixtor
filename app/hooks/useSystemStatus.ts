@@ -123,7 +123,7 @@ export function useSystemStatus(): UseSystemStatusReturn {
 
   return {
     isCheckingSystemStatus,
-    isBlocked,
+    isBlocked: false,
     redirectUrl,
     systemStatusError,
     refetchSystemStatus,
