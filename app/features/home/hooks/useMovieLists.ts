@@ -66,7 +66,8 @@ function fetchPage(params: InfiniteParams, pageParam: number) {
 export function useInfiniteMovieList(params: InfiniteParams) {
   return useInfiniteQuery({
     queryKey: ['infiniteMovieList', params],
-    queryFn: ({ pageParam = 1 }) => fetchPage(params, pageParam as number),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => fetchPage(params, pageParam),
     getNextPageParam: lastPage => {
       const pagination = extractPagination(lastPage);
       const current = Number(pagination?.currentPage ?? pagination?.current_page ?? 1);

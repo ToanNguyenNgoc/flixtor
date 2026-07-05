@@ -12,7 +12,9 @@
 - **Bundle ID**: `com.myspa.flixtor`
 - **Entry point**: `index.js` → `App.tsx`
 - **Platform**: iOS + Android
-- **RN version**: 0.81.5 | React 19.1.0
+- **RN version**: 0.86.0 | React 19.2.3
+- **Navigation baseline**: React Navigation 8 alpha (`@react-navigation/native`, `bottom-tabs`, `native-stack` đều ở `8.0.0-alpha.30`)
+- **New Architecture**: enabled trên Android (`newArchEnabled=true`), Metro/Babel đã chuyển sang stack Reanimated 4 + Worklets
 
 ---
 
@@ -43,12 +45,22 @@ App.tsx (current bootstrap flow)
 
 Providers wrap order:
   GestureHandlerRootView
-    QueryClientProvider (staleTime: 2h, retry: 2)
+    QueryClientProvider (staleTime: 2 min, gcTime: 8 min, retry: 1, no refetchOnWindowFocus/reconnect)
       SafeAreaProvider
         StatusBar (light-content, translucent)
           NavigationContainer (linking prefix: `flixtor://`)
             AppInitializer
               RootNavigator
+
+### Navigation / Platform upgrade notes
+
+- `babel.config.js` dùng `module:@react-native/babel-preset` và `react-native-worklets/plugin` làm plugin cuối để tương thích `react-native-reanimated@4`.
+- `metro.config.js` được bọc bằng `wrapWithReanimatedMetroConfig(...)` để Reanimated 4 hoạt động đúng cùng SVG transformer hiện có.
+- React Navigation 8 alpha hiện vẫn cần 3 patch-package patch nội bộ cho `@react-navigation/native` và nested `@react-navigation/elements`; patch files đã được regenerate đúng version hiện tại để `postinstall` sạch warning.
+- `@tanstack/react-query` đã lên v5, nên các query dùng `gcTime`/`initialPageParam` theo API mới.
+- Repo hiện typecheck sạch với baseline mới; `service.ts` được giữ lại như no-op placeholder vì `react-native-track-player` không còn nằm trong stack app và không còn được register ở `index.js`.
+- iOS hiện có patch-package `patches/react-native-view-shot+4.0.3.patch` để `react-native-view-shot` nhận đúng `RCTScrollViewComponentView` trên React Native 0.86 / New Architecture.
+- `ios/Podfile` đang ép `RNFBAnalytics`, `RNFBApp`, `RNFBAuth`, `RNFBMessaging` về `static_library` và nới `CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES` cho các target `RNFB*` để tránh lỗi module header khi build iOS với `use_frameworks! :linkage => :static`.
 ```
 
 ---

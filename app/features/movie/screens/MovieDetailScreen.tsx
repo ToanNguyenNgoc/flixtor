@@ -339,7 +339,7 @@ export default function MovieDetailScreen() {
                   width={trailerWidth}
                   play={isTrailerPlaying}
                   videoId={trailerVideoId}
-                  onChangeState={(state) => {
+                  onChangeState={(state: string) => {
                     if (state === PLAYER_STATES.ENDED || state === PLAYER_STATES.PAUSED) {
                       setIsTrailerPlaying(false);
                     }

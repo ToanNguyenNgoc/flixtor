@@ -93,7 +93,7 @@ interface ContinueWatchingEntry extends ResumeMovieCardItem {
 const SECTION_SEPARATOR = () => <View style={styles.sectionSeparator} />;
 const HORIZONTAL_SEPARATOR = () => <View style={styles.horizontalSeparator} />;
 
-const ContinueWatchingCard = memo(function ContinueWatchingCard({
+const ContinueWatchingCard = memo(function ContinueWatchingCardComponent({
   isDeleting,
   item,
   onDelete,
@@ -119,7 +119,7 @@ const ContinueWatchingCard = memo(function ContinueWatchingCard({
   );
 });
 
-const QuickActionCard = memo(function QuickActionCard({
+const QuickActionCard = memo(function QuickActionCardComponent({
   item,
   onPress,
 }: QuickActionCardProps) {
@@ -140,7 +140,7 @@ const QuickActionCard = memo(function QuickActionCard({
   );
 });
 
-const SectionRow = memo(function SectionRow({
+const SectionRow = memo(function SectionRowComponent({
   item,
   onMoviePress,
   onSeeAll,
@@ -497,12 +497,12 @@ export default function HomeScreen() {
 
   const renderContinueWatching = useCallback(({ item }: { item: ContinueWatchingEntry }) => (
     <ContinueWatchingCard
-      isDeleting={deleteHistory.isLoading && deleteHistory.variables === item.slug}
+      isDeleting={deleteHistory.isPending && deleteHistory.variables === item.slug}
       item={item}
       onDelete={handleDeleteContinueWatching}
       onPress={handleContinueWatchingPress}
     />
-  ), [deleteHistory.isLoading, deleteHistory.variables, handleContinueWatchingPress, handleDeleteContinueWatching]);
+  ), [deleteHistory.isPending, deleteHistory.variables, handleContinueWatchingPress, handleDeleteContinueWatching]);
 
   const renderSection = useCallback(({ item }: { item: HomeSection }) => (
     <SectionRow

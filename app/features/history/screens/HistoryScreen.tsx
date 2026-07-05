@@ -142,7 +142,7 @@ export default function HistoryScreen() {
   }, [deleteHistory]);
 
   const renderItem = useCallback(({ item, index }: { item: HistoryGridItem; index: number }) => {
-    const isDeleting = deleteHistory.isLoading && deleteHistory.variables === item.movieSlug;
+    const isDeleting = deleteHistory.isPending && deleteHistory.variables === item.movieSlug;
 
     return (
       <View style={[styles.gridItem, index % NUM_COLUMNS !== 0 && styles.gridItemOffset]}>
@@ -159,7 +159,7 @@ export default function HistoryScreen() {
         />
       </View>
     );
-  }, [deleteHistory.isLoading, deleteHistory.variables, handleDeleteItem, handlePressItem]);
+  }, [deleteHistory.isPending, deleteHistory.variables, handleDeleteItem, handlePressItem]);
 
   if (!isAuthenticated) {
     return (

@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-07-05 — Nâng React Native lên 0.86.0
+
+**Files đã sửa:**
+- `AGENTS.md`
+- `package.json`
+- `package-lock.json`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Đồng bộ `react-native` lên `0.86.0`.
+- Đồng bộ các package lõi `@react-native/*` (`new-app-screen`, `babel-preset`, `eslint-config`, `metro-config`, `typescript-config`) lên `0.86.0`.
+- Cập nhật `react` và `react-test-renderer` lên `19.2.3` để khớp peer dependencies của RN 0.86.
+- Refresh `package-lock.json` theo dependency tree mới.
+
+**Lý do:** User yêu cầu chuyển baseline framework của app sang React Native `0.86.0`.
+
+## 2026-07-05 — Sửa blocker iOS build sau khi lên RN 0.86
+
+**Files đã sửa:**
+- `ios/Podfile`
+- `patches/react-native-view-shot+4.0.3.patch`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Thêm patch-package cho `react-native-view-shot@4.0.3` để `RNViewShot.mm` hỗ trợ `RCTScrollViewComponentView` trên React Native 0.86 / New Architecture.
+- Cập nhật `ios/Podfile` để ép các pod `RNFB*` đang dùng sang `static_library` và cho phép non-modular includes trong framework modules, tránh lỗi compile header của React Native Firebase khi build iOS.
+- Reinstall Pods sau khi cập nhật Podfile để project native nhận cấu hình mới.
+
+**Lý do:** Build iOS bị dừng ở `react-native-view-shot` và sau đó vướng thêm compile error từ React Native Firebase sau khi nâng React Native lên `0.86.0`.
+
 ## 2026-05-12 — Initial scaffold (52 files)
 
 **Foundation**: types/index.ts, config/theme.ts, config/env.ts, utils/\*, services/api/\*, services/mock/mockData.ts  
@@ -1060,3 +1094,32 @@
 - `LoginScreen` cập nhật nút Google để hiển thị label loading rõ hơn (`Đang mở Google...` / `Đang đăng nhập Flixtor...`) và thêm loading box dưới nút khi đang gọi backend.
 
 **Lý do:** User muốn có hiệu ứng loading rõ ràng hơn khi flow Google Sign-In đang call API backend, tránh cảm giác app đứng sau khi chọn tài khoản Google.
+
+## 2026-07-05 — Nâng platform baseline để chạy React Navigation 8 alpha an toàn
+
+**Files đã sửa/tạo/xóa:**
+- `package.json`, `package-lock.json`
+- `babel.config.js`, `metro.config.js`, `tsconfig.json`
+- `android/gradle.properties`, `android/gradle/wrapper/gradle-wrapper.properties`
+- `App.tsx`
+- `app/features/home/hooks/useMovieLists.ts`
+- `app/features/search/hooks/useSearchMovies.ts`
+- `app/features/history/screens/HistoryScreen.tsx`
+- `app/features/home/screens/HomeScreen.tsx`
+- `app/features/movie/screens/MovieDetailScreen.tsx`
+- `app/types/index.ts`
+- `app/utils/m3u8.ts`
+- `app/navigator.ts` (mới)
+- `service.ts`
+- `patches/@react-navigation+native+8.0.0-alpha.30.patch`
+- `patches/@react-navigation+bottom-tabs++@react-navigation+elements+3.0.0-alpha.37.patch`
+- `patches/@react-navigation+native-stack++@react-navigation+elements+3.0.0-alpha.37.patch`
+- Xóa patch cũ cho `react-native-track-player`, `@tanstack/react-query` và các patch React Navigation gắn version cũ
+
+**Chi tiết:**
+- Nâng nền tảng từ React Native `0.81.5` lên `0.83.6`, React `19.2.0`, React Navigation `8.0.0-alpha.30`, Reanimated `4.5.1`, Gesture Handler `3.0.2`, Screens `4.25.2` và React Query `5.101.2` để đáp ứng peer requirements của navigation 8.
+- Chuyển Babel/Metro sang preset + worklets pipeline mới của RN 0.83 / Reanimated 4, bật `newArchEnabled=true` trên Android và nâng Gradle wrapper lên `9.0.0`.
+- Cập nhật code app theo API mới của React Query (`gcTime`, `initialPageParam`, `isPending`) và bổ sung types/helpers còn thiếu cho downloads + HLS utilities để typecheck sạch trên stack mới.
+- Regenerate lại patch-package cho React Navigation theo đúng version hiện tại để `npm install` không còn warning giả từ patch filenames cũ; đồng thời loại bỏ phần legacy `react-native-track-player` khỏi baseline thực tế bằng no-op service placeholder.
+
+**Lý do:** User yêu cầu nâng toàn bộ stack để React Navigation 8 alpha chạy được an toàn, có kiểm chứng cả dependency graph lẫn native build/tooling mới.

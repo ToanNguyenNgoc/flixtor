@@ -21,6 +21,41 @@
 
 ## Proposed Features
 
+### React Native 0.86 Native Build Validation
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
+- **Mô tả**: Chạy lại luồng cài native deps và build smoke test trên iOS/Android để bắt sớm các thay đổi Pod, Gradle hoặc compile SDK do RN 0.86 mang theo.
+- **Files dự kiến**: `ios/Podfile.lock`, `android/build.gradle`, `android/gradle.properties`
+- **Priority**: high
+
+### React Native 0.86 Dependency Compatibility Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
+- **Mô tả**: Rà lại các thư viện native nhạy cảm như Reanimated, Gesture Handler, Firebase, Video, Mapbox để xác nhận peer dependency và changelog đều an toàn với baseline mới.
+- **Files dự kiến**: `package.json`, `package-lock.json`
+- **Priority**: high
+
+### React Native Firebase iOS Build Cleanup
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa blocker iOS build trên RN 0.86.0 (2026-07-05)
+- **Mô tả**: Kiểm tra xem project có thể bỏ bớt workaround Podfile cho `RNFB*` sau khi nâng version Firebase packages hoặc đổi cấu hình build, để giảm rủi ro native config drift về sau.
+- **Files dự kiến**: `ios/Podfile`, `package.json`, `package-lock.json`
+- **Priority**: medium
+
+### react-native-view-shot Usage Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm patch-package cho iOS build (2026-07-05)
+- **Mô tả**: Rà lại xem app còn dùng `react-native-view-shot` ở đâu; nếu không còn use case thực tế thì có thể gỡ dependency và xoá patch native để giảm bề mặt bảo trì.
+- **Files dự kiến**: `package.json`, `patches/react-native-view-shot+4.0.3.patch`, các màn hình/chức năng liên quan nếu còn dùng
+- **Priority**: medium
+
+### Upgrade CI Smoke Checks
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
+- **Mô tả**: Bổ sung job CI tối thiểu cho `npm install`, lint và native bootstrap để những lần đổi RN tiếp theo có tín hiệu lỗi sớm hơn.
+- **Files dự kiến**: `.github/workflows/*`, `package.json`
+- **Priority**: medium
+
 ### Genre Filter / Browse by Category Screen
 - **Status**: proposed
 - **Nguồn**: scaffold follow-up (2026-05-12)
@@ -889,13 +924,6 @@
 - **Files dự kiến**: `app/hooks/useSystemStatus.ts`, `app/config/env.ts`, có thể thêm remote config layer sau này
 - **Priority**: low
 
-### Clean Track Player Patch Package
-- **Status**: proposed
-- **Nguồn**: iOS build fix follow-up (2026-06-21)
-- **Mô tả**: Dọn lại `patches/react-native-track-player+4.1.2.patch` để chỉ giữ source changes cần thiết thay vì build artifacts, giúp `postinstall` không còn báo lỗi và mọi clean install ổn định hơn.
-- **Files dự kiến**: `patches/react-native-track-player+4.1.2.patch`, `node_modules/react-native-track-player/*` khi regenerate patch
-- **Priority**: high
-
 ### iOS Smoke Build Command
 - **Status**: proposed
 - **Nguồn**: iOS build fix follow-up (2026-06-21)
@@ -910,9 +938,23 @@
 - **Files dự kiến**: `docs/`, có thể thêm `package.json` hoặc e2e test setup nếu repo bổ sung automation
 - **Priority**: medium
 
-### React Native 0.83 Upgrade Prep
+### Android Build Tools Cleanup For RN 0.83
 - **Status**: proposed
-- **Nguồn**: iOS build fix follow-up (2026-06-21)
-- **Mô tả**: Lên kế hoạch nâng React Native khỏi `0.81.5` để bỏ các patch tương thích tạm thời cho React Navigation 8 alpha và giảm chênh lệch API Fabric/new architecture.
-- **Files dự kiến**: `package.json`, `ios/`, `android/`, các patch trong `patches/`
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-07-05)
+- **Mô tả**: Gỡ `buildToolsVersion '33.0.0'` và rà lại compile/target SDK overrides để Android build không còn warning khi dùng AGP 8.12 / RN 0.83.
+- **Files dự kiến**: `android/build.gradle`, `android/app/build.gradle`
+- **Priority**: medium
+
+### RNMapbox Compatibility Audit On RN 0.83
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-07-05)
+- **Mô tả**: Kiểm tra riêng `@rnmapbox/maps` trên baseline RN 0.83 vì Android build hiện vẫn phát ra nhiều warning Kotlin/deprecation từ module này; mục tiêu là biết có cần bump version hoặc patch thêm không.
+- **Files dự kiến**: `package.json`, `android/`, có thể thêm `patches/`
+- **Priority**: medium
+
+### Native Smoke Build Script Matrix
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-07-05)
+- **Mô tả**: Thêm bộ lệnh smoke build tối thiểu cho Android debug và iOS simulator để mỗi lần nâng React Native/Navigation có thể verify native compile nhanh, thay vì chỉ dựa vào `npm install`.
+- **Files dự kiến**: `package.json`, `docs/`, có thể thêm CI config
 - **Priority**: high

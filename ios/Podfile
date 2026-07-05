@@ -54,6 +54,14 @@ target 'Flixtor' do
 
   pre_install do |installer|
     $RNMapboxMaps.pre_install(installer)
+
+    installer.pod_targets.each do |pod|
+      next unless ['RNFBAnalytics', 'RNFBApp', 'RNFBAuth', 'RNFBMessaging'].include?(pod.name)
+
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
   end
 
   post_install do |installer|
@@ -88,6 +96,20 @@ target 'Flixtor' do
           defs << 'FMT_USE_CONSTEVAL=0'
           config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
         end
+      end
+    end
+
+    installer.pods_project.targets.each do |target|
+      next unless target.name.start_with?('RNFB')
+
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        other_cflags = config.build_settings['OTHER_CFLAGS'] || ['$(inherited)']
+        other_cflags = [other_cflags] unless other_cflags.is_a?(Array)
+        unless other_cflags.include?('-Wno-non-modular-include-in-framework-module')
+          other_cflags << '-Wno-non-modular-include-in-framework-module'
+        end
+        config.build_settings['OTHER_CFLAGS'] = other_cflags
       end
     end
 
