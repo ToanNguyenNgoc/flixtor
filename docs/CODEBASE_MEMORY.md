@@ -224,6 +224,8 @@ Hooks và stores không cần sửa.
 - WatchScreen vẫn lưu continue-watching local vào `watchHistoryStore`; ngoài ra nếu user đã login thì sẽ queue/throttle `POST /api/user/history` ở các mốc định kỳ, pause, seek ổn định, back, background và end.
 - Landscape dùng immersive mode + ẩn status bar; video full-bleed sát hai cạnh màn hình để `Fill` cover trọn khung, còn top/bottom controls mới là phần tôn trọng safe-area và seek bar bám tuyệt đối ở mép dưới.
 - Portrait hiện theo chế độ player-only: video `contain` nằm giữa màn hình trên nền đen, chỉ giữ lại controls overlay và ẩn toàn bộ panel metadata/thao tác bên dưới.
+- `RootNavigator` mở `Watch` với `animation: 'none'` thay vì `fade` để tránh iOS native-stack giữ nhầm frame portrait khi đẩy sang màn landscape, làm player/video bị lệch khỏi khung nhìn.
+- Khi source `m3u8` trên iOS load được audio nhưng native player không render hình kịp, `WatchScreen` sẽ fallback sang `link_embed` sau timeout ngắn hoặc ngay khi native player báo lỗi, để user vẫn xem được video.
 - Có nút xoay thủ công trong player; nếu user xoay máy đúng với chiều đã chọn thủ công thì screen sẽ tự nhả lock để quay lại auto-rotate tự nhiên.
 - `WatchScreen` tối ưu render bằng cách memo hóa `PlayerMediaSurface`, `EpisodeDrawer`, `QualityDrawer`; nhờ đó native `Video`/`WebView` và các drawer nặng không phải re-render theo mọi nhịp progress.
 - Player dùng `progressUpdateInterval` động: khi controls đang hiện hoặc đang seek thì cập nhật nhanh hơn, còn khi controls ẩn sẽ giảm tần suất sync UI để bớt tải CPU/JS thread.
@@ -238,9 +240,9 @@ Hooks và stores không cần sửa.
 - Series indicator badge (chữ "S" đỏ)
 
 ### Shared Image Pipeline
-- Helper ảnh trong `app/utils/image.ts` chuẩn hoá URL `phimimg.com` và đi qua proxy `https://phimapi.com/image.php?url=...` để lấy ảnh `.webp` tối ưu từ server KKPhim.
-- `prefetchImages()` vẫn dùng `FastImage.preload` cho cache client, nhưng preload URL proxy `.webp` thay vì URL gốc.
-- `CachedImage` có fallback 2 tầng: URL proxy `.webp` → URL gốc `phimimg.com` → placeholder.
+- Helper ảnh trong `app/utils/image.ts` chuẩn hoá URL `phimimg.com` và hiện trả trực tiếp URL gốc thay vì đi qua proxy `phimapi.com/image.php`, vì endpoint proxy không còn hoạt động ổn định.
+- `prefetchImages()` preload trực tiếp URL ảnh gốc đã normalize.
+- `CachedImage` giữ fallback từ URL chính hiện tại sang placeholder, đồng thời vẫn chấp nhận source URL đã được normalize sẵn.
 
 ### HistoryScreen
 - Khi user đã đăng nhập, `HistoryScreen` gọi `GET /api/user/history?page=1&limit=20` qua React Query và hiển thị lịch sử xem dạng grid 2 cột.

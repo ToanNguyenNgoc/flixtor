@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  network_security_config.xml
+  Cho phép cleartext (HTTP) với các domain streaming/image của Flixtor.
+  Giữ HTTPS mặc định cho các domain khác.
+-->
+<network-security-config>
+  <!-- Cho phép cleartext với các domain image và API phim -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">phimimg.com</domain>
+    <domain includeSubdomains="true">phimapi.com</domain>
+    <domain includeSubdomains="true">longdc.click</domain>
+    <domain includeSubdomains="true">flix-api.longdc.click</domain>
+  </domain-config>
+
+  <!-- Cho phép tất cả domain phát video streaming (m3u8, HLS CDN) -->
+  <base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>

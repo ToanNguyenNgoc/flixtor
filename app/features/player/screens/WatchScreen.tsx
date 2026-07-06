@@ -108,6 +108,7 @@ const DRAWER_INITIAL_RENDER = 18;
 const DRAWER_BATCH_SIZE = 18;
 const DRAWER_WINDOW_SIZE = 6;
 const DRAWER_UPDATE_BATCHING_PERIOD = 50;
+const IOS_VIDEO_RENDER_TIMEOUT_MS = 5000;
 const HIT = { top: 16, bottom: 16, left: 16, right: 16 };
 const BOTTOM_CONTROLS_TOUCH_EXCLUSION = 96;
 const TOP_GESTURE_EXCLUSION = 72;
@@ -196,6 +197,7 @@ interface PlayerMediaSurfaceProps {
   speed: number;
   progressUpdateInterval: number;
   onLoad: (data: OnLoadData) => void;
+  onReadyForDisplay: () => void;
   onProgress: (data: OnProgressData) => void;
   onBuffer: ({ isBuffering }: { isBuffering: boolean }) => void;
   onEnd: () => void;
@@ -213,6 +215,7 @@ const PlayerMediaSurface = React.memo(function PlayerMediaSurface({
   speed,
   progressUpdateInterval,
   onLoad,
+  onReadyForDisplay,
   onProgress,
   onBuffer,
   onEnd,
@@ -244,6 +247,7 @@ const PlayerMediaSurface = React.memo(function PlayerMediaSurface({
       playInBackground={false}
       progressUpdateInterval={progressUpdateInterval}
       onLoad={onLoad}
+      onReadyForDisplay={onReadyForDisplay}
       onProgress={onProgress}
       onBuffer={onBuffer}
       onEnd={onEnd}
@@ -458,6 +462,7 @@ export default function WatchScreen() {
   const [showQualityModal, setShowQualityModal] = useState(false);
   const [isChangingQuality, setIsChangingQuality] = useState(false);
   const pendingSeekTime = useRef<number>(-1);
+  const readyForDisplayTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [currentOrientation, setCurrentOrientation] = useState<PlayerOrientation>('landscape');
   const [, setManualOrientationLock] = useState<PlayerOrientation | null>(null);
   const [, setIsAutoRotateEnabled] = useState(true);
@@ -468,9 +473,24 @@ export default function WatchScreen() {
   const manualOrientationTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const isEmbed = videoSource.type === 'embed';
+  const [forceEmbedPlayback, setForceEmbedPlayback] = useState(false);
   const videoUri = selectedQuality ? selectedQuality.uri : videoSource.uri;
+  // isLandscape is driven purely by orientation state, NOT by viewport dimensions.
+  // Using isLandscapeViewport as a gate caused the layout to briefly render in portrait
+  // dimensions while the native side had already rotated, making video spill outside screen.
   const isLandscape = currentOrientation === 'landscape';
+  // Actual pixel dimensions for the player surface
+  const playerW = isLandscape ? Math.max(window.width, window.height) : Math.min(window.width, window.height);
+  const playerH = isLandscape ? Math.min(window.width, window.height) : Math.max(window.width, window.height);
   const isSingleEpisodeMovie = allEpisodes.length <= 1;
+  const isEmbedPlayback = isEmbed || forceEmbedPlayback;
+
+  const clearReadyForDisplayTimer = useCallback(() => {
+    if (readyForDisplayTimerRef.current) {
+      clearTimeout(readyForDisplayTimerRef.current);
+      readyForDisplayTimerRef.current = undefined;
+    }
+  }, []);
 
   const syncCurrentTime = useCallback((nextTime: number) => {
     displayedTimeRef.current = nextTime;
@@ -676,12 +696,18 @@ export default function WatchScreen() {
 
   useEffect(() => () => {
     clearHideTimer();
+    clearReadyForDisplayTimer();
     if (singleTapTimeout.current) clearTimeout(singleTapTimeout.current);
     if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
     if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
     if (manualOrientationTimerRef.current) clearTimeout(manualOrientationTimerRef.current);
     if (seekStableRemoteSaveTimerRef.current) clearTimeout(seekStableRemoteSaveTimerRef.current);
-  }, [clearHideTimer]);
+  }, [clearHideTimer, clearReadyForDisplayTimer]);
+
+  useEffect(() => {
+    setForceEmbedPlayback(false);
+    clearReadyForDisplayTimer();
+  }, [clearReadyForDisplayTimer, currentEpSlug, currentServerName, videoSource.uri]);
 
   // ── Double Tap & Feedback ────────────────────────────────────────────────
 
@@ -992,7 +1018,29 @@ export default function WatchScreen() {
     }
     lastUiTimeSyncRef.current = Date.now();
     scheduleHide();
-  }, [resumeAt, scheduleHide, syncBufferedTime, syncCurrentTime, syncDuration]);
+
+    if (Platform.OS === 'ios' && videoSource.type === 'm3u8' && videoSource.fallbackUri) {
+      clearReadyForDisplayTimer();
+      readyForDisplayTimerRef.current = setTimeout(() => {
+        setForceEmbedPlayback(true);
+        setPlaying(true);
+      }, IOS_VIDEO_RENDER_TIMEOUT_MS);
+    }
+  }, [
+    clearReadyForDisplayTimer,
+    resumeAt,
+    scheduleHide,
+    syncBufferedTime,
+    syncCurrentTime,
+    syncDuration,
+    videoSource.fallbackUri,
+    videoSource.type,
+  ]);
+
+  const onReadyForDisplay = useCallback(() => {
+    clearReadyForDisplayTimer();
+    setForceEmbedPlayback(false);
+  }, [clearReadyForDisplayTimer]);
 
   const onProgress = useCallback((d: OnProgressData) => {
     const dur = d.seekableDuration || duration;
@@ -1045,10 +1093,16 @@ export default function WatchScreen() {
   }, []);
 
   const onError = useCallback(() => {
+    clearReadyForDisplayTimer();
     setIsVideoLoading(false);
     setBuffering(false);
+    if (Platform.OS === 'ios' && videoSource.type === 'm3u8' && videoSource.fallbackUri) {
+      setForceEmbedPlayback(true);
+      setPlaying(true);
+      return;
+    }
     setHasError(true);
-  }, []);
+  }, [clearReadyForDisplayTimer, videoSource.fallbackUri, videoSource.type]);
 
   const onEnd = useCallback(() => {
     const finalProgress = progressRef.current.duration || duration;
@@ -1105,6 +1159,7 @@ export default function WatchScreen() {
     lastUiBufferSyncRef.current = 0;
     setHasError(false);
     setPlaying(true);
+    setForceEmbedPlayback(false);
     setShowEpDrawer(false);
     revealControls();
   }, [revealControls, savePlaybackProgress, syncBufferedTime, syncCurrentTime, syncDuration]);
@@ -1117,6 +1172,7 @@ export default function WatchScreen() {
     setIsChangingQuality(true);
     pendingSeekTime.current = currentTime;
     setSelectedQuality(q);
+    setForceEmbedPlayback(false);
     setPlaying(true);
   }, [currentTime, selectedQuality, videoUri]);
 
@@ -1317,7 +1373,10 @@ export default function WatchScreen() {
   }
 
   const isVideoBusy = isVideoLoading || buffering || isSeeking || isChangingQuality;
-  const playerSurfaceStyle = isLandscape ? styles.playerSurfaceLandscape : styles.playerSurfacePortrait;
+  const playerSurfaceStyle = [
+    isLandscape ? styles.playerSurfaceLandscape : styles.playerSurfacePortrait,
+    isLandscape ? { width: playerW, height: playerH } : {},
+  ];
   const videoFrameStyle = styles.videoFrame;
   const controlsStyle = [
     StyleSheet.absoluteFill,
@@ -1361,7 +1420,7 @@ export default function WatchScreen() {
       <View style={[styles.playerSurface, playerSurfaceStyle]}>
         <View style={videoFrameStyle}>
           <PlayerMediaSurface
-            videoSourceType={videoSource.type}
+            videoSourceType={isEmbedPlayback ? 'embed' : videoSource.type}
             videoUri={videoUri}
             fallbackUri={videoSource.fallbackUri}
             videoRef={videoRef}
@@ -1371,6 +1430,7 @@ export default function WatchScreen() {
             speed={speed}
             progressUpdateInterval={progressUpdateIntervalMs}
             onLoad={onLoad}
+            onReadyForDisplay={onReadyForDisplay}
             onProgress={onProgress}
             onBuffer={onBuffer}
             onEnd={onEnd}
@@ -1437,7 +1497,7 @@ export default function WatchScreen() {
                 )}
               </View>
 
-              {hasEpisodes && !isEmbed && (
+              {hasEpisodes && !isEmbedPlayback && (
                 <TouchableOpacity
                   onPress={() => { setPlaying(false); setShowEpDrawer(true); }}
                   style={styles.epToggleBtn}
@@ -1447,7 +1507,7 @@ export default function WatchScreen() {
                 </TouchableOpacity>
               )}
 
-              {!isEmbed && (
+              {!isEmbedPlayback && (
                 <View style={styles.controlActionRow}>
                   {qualities.length > 1 && (
                     <TouchableOpacity
@@ -1473,7 +1533,7 @@ export default function WatchScreen() {
               )}
             </View>
 
-            {!isEmbed && (
+            {!isEmbedPlayback && (
               <View style={styles.centerRow}>
                 <TouchableOpacity onPress={() => seek(-SEEK_S)} style={styles.seekBtn} hitSlop={HIT}>
                   <Icon icon='TimePastLight' size={34} color={muiColor.grey[0]} />
@@ -1493,7 +1553,7 @@ export default function WatchScreen() {
               </View>
             )}
 
-            {!isEmbed && (
+            {!isEmbedPlayback && (
               <View style={bottomBarStyle} onLayout={handleBottomBarLayout}>
                 <Text style={styles.timeText}>{formatTime(displayTime)}</Text>
                 <VideoSeekBar
@@ -1516,7 +1576,7 @@ export default function WatchScreen() {
               </View>
             )}
 
-            {showSpeed && !isEmbed && (
+            {showSpeed && !isEmbedPlayback && (
               <View style={speedMenuStyle}>
                 {SPEEDS.map(s => (
                   <TouchableOpacity
@@ -1587,12 +1647,14 @@ const styles = StyleSheet.create({
   },
   playerSurfacePortrait: {
     flex: 1,
+    alignSelf: 'stretch',
   },
   playerSurfaceLandscape: {
-    flex: 1,
+    alignSelf: 'stretch',
   },
   videoFrame: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
+    position: 'relative',
   },
   tapLayerWithControls: {
     bottom: BOTTOM_CONTROLS_TOUCH_EXCLUSION,

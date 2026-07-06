@@ -5,6 +5,55 @@
 
 ---
 
+## 2026-07-05 — Fix: ảnh không load + video chỉ có tiếng không có hình
+
+**Files đã sửa:**
+- `ios/Flixtor/Info.plist`
+- `android/app/src/main/AndroidManifest.xml`
+- `android/app/src/main/res/xml/network_security_config.xml` [NEW]
+
+**Thay đổi:**
+- **iOS**: Thêm `NSAllowsArbitraryLoadsForMedia = true` và `NSExceptionDomains` cho `phimimg.com`, `phimapi.com`, `longdc.click`, `flix-api.longdc.click`. Trước đó `NSAllowsArbitraryLoads = false` không có exception nào → ATS block hết ảnh và stream video.
+- **Android**: Thay `android:usesCleartextTraffic="${usesCleartextTraffic}"` (biến chưa được set trong build.gradle → undefined → block cleartext) bằng `true`. Thêm `android:networkSecurityConfig="@xml/network_security_config"`.
+- **Android**: Tạo `res/xml/network_security_config.xml` với `base-config cleartextTrafficPermitted="true"` để video m3u8/HLS từ CDN HTTP phát được.
+
+**Lý do:** FastImage/axios không load được ảnh trên iOS vì ATS block. Video react-native-video chỉ phát audio (không có hình) trên Android vì cleartext traffic bị block do biến gradle chưa resolve.
+
+---
+
+## 2026-07-05 — Fix WatchScreen: video bị tràn ra ngoài màn hình
+
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+
+**Thay đổi:**
+- Bỏ điều kiện `isLandscapeViewport` khỏi `isLandscape` — orientation state là nguồn duy nhất, không phụ thuộc `window.width/height` chưa kịp update.
+- Thêm `playerW / playerH` explicit dimensions cho `playerSurface` trong landscape mode (lấy `max/min` của `window.width` và `window.height`).
+- Đổi `videoFrame` từ `absoluteFillObject` sang `flex: 1, position: 'relative'` để `Video` con dùng `absoluteFill` hoạt động đúng trong flex container.
+- `playerSurfaceLandscape` bỏ `flex: 1`, dùng `alignSelf: 'stretch'` + explicit `width/height`.
+
+**Lý do:** Video bị render ra ngoài màn hình (controls hiện xoay 90° ở cạnh phải) vì `isLandscape = false` khi viewport chưa update sau khi native đã xoay, làm layout dùng sai dimensions.
+
+## 2026-07-05 — Sửa source ảnh hỏng và thêm fallback video iOS
+
+**Files đã sửa:**
+- `app/utils/image.ts`
+- `app/utils/episode.ts`
+- `app/features/player/screens/WatchScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Bỏ image proxy `phimapi.com/image.php` trong helper ảnh và trả trực tiếp URL gốc `phimimg.com`, vì proxy hiện trả `404`.
+- Gắn `fallbackUri` từ `link_embed` vào `VideoSource` khi episode có `m3u8`, để player có đường lui nếu native video không render được hình.
+- Trên iOS, `WatchScreen` sẽ tự chuyển sang embed player khi source `m3u8` báo lỗi hoặc không `onReadyForDisplay` trong một khoảng ngắn, giảm trường hợp chỉ nghe tiếng mà không có hình.
+
+**Lý do:** User báo poster/source ảnh không load và player có tiếng nhưng không hiện hình khi phát phim.
+
+---
+
 ## 2026-07-05 — Nâng React Native lên 0.86.0
 
 **Files đã sửa:**
@@ -38,6 +87,21 @@
 - Reinstall Pods sau khi cập nhật Podfile để project native nhận cấu hình mới.
 
 **Lý do:** Build iOS bị dừng ở `react-native-view-shot` và sau đó vướng thêm compile error từ React Native Firebase sau khi nâng React Native lên `0.86.0`.
+
+## 2026-07-05 — Sửa layout màn Watch bị lệch khung trên iOS
+
+**Files đã sửa:**
+- `app/navigation/RootNavigator.tsx`
+- `app/features/player/screens/WatchScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Đổi transition của screen `Watch` từ `fade` sang `none` để tránh bug iOS native-stack/react-native-screens giữ nhầm frame portrait khi push sang màn landscape.
+- Chỉ áp dụng layout landscape của `WatchScreen` khi viewport React Native thực sự có `width > height`, tránh render control/video theo orientation "ảo" trước khi màn hình xoay xong.
+
+**Lý do:** User báo giao diện trình phát phim trên iOS bị tràn/out khỏi màn hình dù màn Watch đã xoay ngang đúng.
 
 ## 2026-05-12 — Initial scaffold (52 files)
 

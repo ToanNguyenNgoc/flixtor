@@ -49,6 +49,20 @@
 - **Files dự kiến**: `package.json`, `patches/react-native-view-shot+4.0.3.patch`, các màn hình/chức năng liên quan nếu còn dùng
 - **Priority**: medium
 
+### Watch Screen Orientation Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa layout player bị lệch khung trên iOS (2026-07-05)
+- **Mô tả**: Bổ sung checklist/manual smoke test cho luồng vào `Watch`, xoay portrait/landscape, back ra `MovieDetail` và chuyển tập/chất lượng để bắt sớm các lỗi frame/orientation.
+- **Files dự kiến**: `docs/*`, có thể thêm script/test helper nếu team muốn tự động hóa
+- **Priority**: medium
+
+### iOS Video Renderer Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm fallback embed cho player iOS (2026-07-05)
+- **Mô tả**: Rà lại tương thích giữa `react-native-video`, Fabric/New Architecture và stream HLS hiện tại để xác định có thể quay lại native player 100% hay cần giữ fallback lâu dài.
+- **Files dự kiến**: `package.json`, `ios/Podfile.lock`, `app/features/player/screens/WatchScreen.tsx`
+- **Priority**: high
+
 ### Upgrade CI Smoke Checks
 - **Status**: proposed
 - **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
