@@ -5,6 +5,34 @@
 
 ---
 
+## 2026-07-22 — Pin react-native-screens for RN 0.81 + Paper compatibility
+
+**Files đã sửa:**
+- `package.json`
+- `yarn.lock`
+
+**Chi tiết:**
+- Pin `react-native-screens` về `4.24.0` thay vì để semver trôi lên `4.26.2`.
+- Gỡ patch `react-native-screens+4.26.2.patch` vì bản `4.26.x` nằm ngoài dải support chính thức của project hiện tại.
+- Mục tiêu là đưa app về dải tương thích với `react-native@0.81.5` khi `newArchEnabled=false`, tránh lỗi runtime `ScreenStack` bị `undefined` lúc render `NativeStackView`.
+
+**Lý do:** `react-native-screens` chính thức đánh dấu `4.25+` là không hỗ trợ Paper/legacy architecture, trong khi repo đang để `newArchEnabled=false`.
+
+## 2026-07-22 — Fix Android BootSplash fullscreen rendering
+
+**Files đã sửa:**
+- `App.tsx`
+- `android/app/src/main/res/drawable/compat_splash_screen.xml`
+- `android/app/src/main/res/drawable/compat_splash_screen_oneui_4.xml`
+- `android/app/src/main/res/values/styles.xml`
+
+**Chi tiết:**
+- Bật lại `BootSplash.hide({ fade: true })` sau bootstrap để splash native không bị giữ lại vô thời hạn.
+- Override `compat_splash_screen` và `compat_splash_screen_oneui_4` ở phía app để lớp overlay của `react-native-bootsplash` render ảnh phủ toàn màn hình thay vì layout logo căn giữa mặc định.
+- Đồng bộ `BootTheme.android:windowBackground` sang drawable fullscreen mới để splash background và overlay dùng chung một nguồn hiển thị.
+
+**Lý do:** Android đang hiển thị splash kiểu centered logo do layout mặc định của `react-native-bootsplash`, trong khi asset của project được thiết kế theo tỉ lệ full-screen.
+
 ## 2026-05-12 — Initial scaffold (52 files)
 
 **Foundation**: types/index.ts, config/theme.ts, config/env.ts, utils/\*, services/api/\*, services/mock/mockData.ts  

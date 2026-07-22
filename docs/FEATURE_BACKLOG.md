@@ -21,6 +21,41 @@
 
 ## Proposed Features
 
+### Android Dependency Compatibility Audit
+- **Status**: proposed
+- **Nguồn**: android build compatibility follow-up (2026-07-21)
+- **Mô tả**: Rà soát các package native đang chạy ahead-of-RN-version như `react-native-screens` để chốt dải version tương thích với `react-native@0.81.5`, giảm nguy cơ phát sinh lỗi build sau mỗi lần cài lại dependency.
+- **Files dự kiến**: `package.json`, `patches/`, `docs/CODEBASE_MEMORY.md`
+- **Priority**: high
+
+### Android CI Smoke Build
+- **Status**: proposed
+- **Nguồn**: android build compatibility follow-up (2026-07-21)
+- **Mô tả**: Thêm pipeline hoặc script smoke build `:app:assembleDebug` để phát hiện sớm lỗi codegen/Kotlin từ dependency native trước khi merge hoặc release.
+- **Files dự kiến**: `.github/workflows/*` hoặc config CI tương ứng, `package.json`, `docs/CHANGE_MEMORY.md`
+- **Priority**: high
+
+### Native Patch Inventory
+- **Status**: proposed
+- **Nguồn**: android build compatibility follow-up (2026-07-21)
+- **Mô tả**: Ghi chú rõ patch nào đang áp vào thư viện bên thứ ba, vì sao cần, và khi nào có thể bỏ patch để việc nâng cấp package sau này đỡ rủi ro.
+- **Files dự kiến**: `docs/CODEBASE_MEMORY.md`, `patches/`
+- **Priority**: medium
+
+### Android 12 Splash Transition Polish
+- **Status**: proposed
+- **Nguồn**: android bootsplash fullscreen fix follow-up (2026-07-22)
+- **Mô tả**: Tinh chỉnh trải nghiệm chuyển từ splash hệ thống Android 12+ sang splash overlay/app đầu tiên để giảm cảm giác "flash" centered icon trong khung thời gian rất ngắn lúc app vừa mở.
+- **Files dự kiến**: `android/app/src/main/res/values/styles.xml`, `android/app/src/main/java/com/myspa/flixtor/MainActivity.kt`, `App.tsx`
+- **Priority**: medium
+
+### Branded Launch Skeleton
+- **Status**: proposed
+- **Nguồn**: android bootsplash fullscreen fix follow-up (2026-07-22)
+- **Mô tả**: Tạo launch skeleton trong React Native khớp với splash branding để khi bootstrap dữ liệu lâu, người dùng vẫn thấy màn chờ đồng bộ với visual của native splash thay vì chuyển đột ngột sang loading UI khác.
+- **Files dự kiến**: `App.tsx`, `app/features/auth/screens/SplashScreen.tsx`, `app/config/theme.ts`
+- **Priority**: medium
+
 ### Genre Filter / Browse by Category Screen
 - **Status**: proposed
 - **Nguồn**: scaffold follow-up (2026-05-12)
