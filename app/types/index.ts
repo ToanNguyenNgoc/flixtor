@@ -209,7 +209,17 @@ export interface User {
   avatarUrl?: string;
   role: string;
   emailVerified: boolean;
+  isBlocked?: boolean;
+  blockReason?: string;
   createdAt: string;
+}
+
+export interface AuthTokenResponse {
+  status: boolean;
+  token: string;
+  refreshToken?: string;
+  expiresIn?: string;
+  refreshExpiresIn?: string;
 }
 
 export interface LoginRequest {
@@ -217,10 +227,7 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
-  status: boolean;
-  token: string;
-  refreshToken?: string;
+export interface LoginResponse extends AuthTokenResponse {
   user: User;
 }
 
@@ -230,13 +237,19 @@ export interface RegisterRequest {
   displayName: string;
 }
 
-export interface RegisterResponse {
-  status: boolean;
-  token: string;
-  refreshToken?: string;
-  expiresIn?: string;
-  refreshExpiresIn?: string;
+export interface RegisterResponse extends AuthTokenResponse {
   user: User;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse extends AuthTokenResponse {}
+
+export interface PersistedAuthSession {
+  accessTokenExpiresAt: number | null;
+  refreshTokenExpiresAt: number | null;
 }
 
 export interface MeResponse {
@@ -272,12 +285,7 @@ export interface GoogleAuthPayload {
   photo: string;
 }
 
-export interface GoogleAuthResponse {
-  status: boolean;
-  token: string;
-  refreshToken?: string;
-  expiresIn?: string;
-  refreshExpiresIn?: string;
+export interface GoogleAuthResponse extends AuthTokenResponse {
   user: User;
 }
 

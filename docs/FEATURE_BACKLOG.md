@@ -21,6 +21,27 @@
 
 ## Proposed Features
 
+### Session Expiry Notice UX
+- **Status**: proposed
+- **Nguồn**: refresh-token flow follow-up (2026-07-30)
+- **Mô tả**: Hiển thị thông báo rõ ràng khi refresh token đã hết hạn hoặc phiên bị revoke để user hiểu vì sao app quay về guest mode thay vì cảm giác bị logout đột ngột.
+- **Files dự kiến**: `app/features/profile/screens/ProfileScreen.tsx`, `app/features/auth/store/authStore.ts`, `app/components/common/*`
+- **Priority**: medium
+
+### Auth Session Debug Panel
+- **Status**: proposed
+- **Nguồn**: refresh-token flow follow-up (2026-07-30)
+- **Mô tả**: Bổ sung màn hình/debug sheet trong phần cài đặt để xem access token còn hạn bao lâu, refresh token còn hạn bao lâu và trạng thái lần refresh gần nhất, giúp QA kiểm thử dễ hơn.
+- **Files dự kiến**: `app/features/settings/screens/SettingScreen.tsx`, `app/features/auth/store/authStore.ts`, `app/features/auth/utils/authSession.ts`
+- **Priority**: medium
+
+### Refresh Token Retry Policy
+- **Status**: proposed
+- **Nguồn**: refresh-token flow follow-up (2026-07-30)
+- **Mô tả**: Thêm retry/backoff có kiểm soát cho refresh request khi mạng chập chờn để giảm việc logout ngoài ý muốn trong lúc user đang xem phim trên kết nối yếu.
+- **Files dự kiến**: `app/services/api/axiosClient.ts`, `app/features/auth/store/authStore.ts`, `docs/CODEBASE_MEMORY.md`
+- **Priority**: medium
+
 ### Android Dependency Compatibility Audit
 - **Status**: proposed
 - **Nguồn**: android build compatibility follow-up (2026-07-21)

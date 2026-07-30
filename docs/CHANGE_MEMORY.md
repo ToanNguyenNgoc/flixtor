@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-07-30 — Refresh token flow with expiry-aware session restore
+
+**Files đã sửa:**
+- `app/types/index.ts`
+- `app/utils/storage.ts`
+- `app/features/auth/utils/authSession.ts`
+- `app/features/auth/services/authService.ts`
+- `app/features/auth/store/authStore.ts`
+- `app/features/auth/hooks/useAuthGoogle.ts`
+- `app/services/api/axiosClient.ts`
+- `docs/CODEBASE_MEMORY.md`
+
+**Chi tiết:**
+- Bổ sung persist session metadata cho `expiresIn` và `refreshExpiresIn`, lưu thành timestamp thật trong `@flixtor/auth_session`.
+- Mở rộng auth parsers để normalize cả login/register/google/refresh-token response, đồng thời thêm endpoint `POST /api/auth/refresh-token`.
+- Nâng cấp `axiosClient` để refresh access token chủ động trước request khi token sắp hết hạn, retry đúng 1 lần khi gặp `401`, và dùng chung một refresh promise cho các request đồng thời.
+- Cập nhật `restoreSession()` để có thể phục hồi phiên bằng `refreshToken` ngay khi app khởi động trước khi gọi `/api/auth/me`.
+
+**Lý do:** API auth hiện đã trả về `refreshToken`, `expiresIn` và `refreshExpiresIn`, nên app cần tự gia hạn phiên thay vì logout ngay khi access token hết hạn.
+
 ## 2026-07-22 — Pin react-native-screens for RN 0.81 + Paper compatibility
 
 **Files đã sửa:**

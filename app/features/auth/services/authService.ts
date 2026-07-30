@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import apiClient, { type ApiRequestConfig } from '@/services/api/axiosClient';
 import type {
+  AuthTokenResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   GoogleAuthPayload,
@@ -8,6 +9,8 @@ import type {
   LoginRequest,
   LoginResponse,
   MeResponse,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
@@ -20,6 +23,7 @@ const AUTH_ENDPOINTS = {
   googleLogin: 'https://flix-api.longdc.click/api/auth/moba/google',
   login: 'https://flix-api.longdc.click/api/auth/login',
   register: 'https://flix-api.longdc.click/api/auth/register',
+  refreshToken: 'https://flix-api.longdc.click/api/auth/refresh-token',
   resetPassword: 'https://flix-api.longdc.click/api/auth/reset-password',
   me: 'https://flix-api.longdc.click/api/auth/me',
 } as const;
@@ -47,6 +51,8 @@ function normalizeUser(rawUser: unknown): User | null {
     avatarUrl,
     role,
     emailVerified,
+    isBlocked,
+    blockReason,
     createdAt,
   } = rawUser;
 
@@ -68,13 +74,18 @@ function normalizeUser(rawUser: unknown): User | null {
     avatarUrl: typeof avatarUrl === 'string' && avatarUrl.length > 0 ? avatarUrl : undefined,
     role,
     emailVerified,
+    isBlocked: typeof isBlocked === 'boolean' ? isBlocked : undefined,
+    blockReason: typeof blockReason === 'string' && blockReason.length > 0 ? blockReason : undefined,
     createdAt,
   };
 }
 
-function parseLoginResponse(data: unknown): LoginResponse {
+function parseAuthTokenResponse(
+  data: unknown,
+  fallbackMessage: string,
+): AuthTokenResponse {
   if (!isRecord(data)) {
-    throw new Error('Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.');
+    throw new Error(fallbackMessage);
   }
 
   if (data.status !== true) {
@@ -82,7 +93,7 @@ function parseLoginResponse(data: unknown): LoginResponse {
     throw new Error(
       typeof message === 'string' && message.trim().length > 0
         ? message
-        : 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.',
+        : fallbackMessage,
     );
   }
 
@@ -90,98 +101,79 @@ function parseLoginResponse(data: unknown): LoginResponse {
   const refreshToken = typeof data.refreshToken === 'string' && data.refreshToken.trim().length > 0
     ? data.refreshToken.trim()
     : undefined;
-  const user = normalizeUser(data.user);
+  const expiresIn = typeof data.expiresIn === 'string' && data.expiresIn.trim().length > 0
+    ? data.expiresIn.trim()
+    : undefined;
+  const refreshExpiresIn = typeof data.refreshExpiresIn === 'string' && data.refreshExpiresIn.trim().length > 0
+    ? data.refreshExpiresIn.trim()
+    : undefined;
 
-  if (!token || !user) {
-    throw new Error('Phản hồi đăng nhập không hợp lệ. Vui lòng thử lại.');
+  if (!token) {
+    throw new Error(fallbackMessage);
   }
 
   return {
     status: true,
     token,
     refreshToken,
+    expiresIn,
+    refreshExpiresIn,
+  };
+}
+
+function parseLoginResponse(data: unknown): LoginResponse {
+  const session = parseAuthTokenResponse(
+    data,
+    'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.',
+  );
+  const responseData = data as Record<string, unknown>;
+  const user = normalizeUser(responseData.user);
+
+  if (!user) {
+    throw new Error('Phản hồi đăng nhập không hợp lệ. Vui lòng thử lại.');
+  }
+
+  return {
+    ...session,
     user,
   };
 }
 
 function parseRegisterResponse(data: unknown): RegisterResponse {
-  if (!isRecord(data)) {
-    throw new Error('Đăng ký thất bại. Vui lòng thử lại.');
-  }
+  const session = parseAuthTokenResponse(data, 'Đăng ký thất bại. Vui lòng thử lại.');
+  const responseData = data as Record<string, unknown>;
+  const user = normalizeUser(responseData.user);
 
-  if (data.status !== true) {
-    const message = data.message ?? data.msg ?? data.error;
-    throw new Error(
-      typeof message === 'string' && message.trim().length > 0
-        ? message
-        : 'Đăng ký thất bại. Vui lòng thử lại.',
-    );
-  }
-
-  const token = typeof data.token === 'string' ? data.token.trim() : '';
-  const refreshToken = typeof data.refreshToken === 'string' && data.refreshToken.trim().length > 0
-    ? data.refreshToken.trim()
-    : undefined;
-  const expiresIn = typeof data.expiresIn === 'string' && data.expiresIn.trim().length > 0
-    ? data.expiresIn.trim()
-    : undefined;
-  const refreshExpiresIn = typeof data.refreshExpiresIn === 'string' && data.refreshExpiresIn.trim().length > 0
-    ? data.refreshExpiresIn.trim()
-    : undefined;
-  const user = normalizeUser(data.user);
-
-  if (!token || !user) {
+  if (!user) {
     throw new Error('Phản hồi đăng ký không hợp lệ. Vui lòng thử lại.');
   }
 
   return {
-    status: true,
-    token,
-    refreshToken,
-    expiresIn,
-    refreshExpiresIn,
+    ...session,
     user,
   };
 }
 
 function parseGoogleAuthResponse(data: unknown): GoogleAuthResponse {
-  if (!isRecord(data)) {
-    throw new Error('Đăng nhập Google thất bại. Vui lòng thử lại.');
-  }
+  const session = parseAuthTokenResponse(data, 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+  const responseData = data as Record<string, unknown>;
+  const user = normalizeUser(responseData.user);
 
-  if (data.status !== true) {
-    const message = data.message ?? data.msg ?? data.error;
-    throw new Error(
-      typeof message === 'string' && message.trim().length > 0
-        ? message
-        : 'Đăng nhập Google thất bại. Vui lòng thử lại.',
-    );
-  }
-
-  const token = typeof data.token === 'string' ? data.token.trim() : '';
-  const refreshToken = typeof data.refreshToken === 'string' && data.refreshToken.trim().length > 0
-    ? data.refreshToken.trim()
-    : undefined;
-  const expiresIn = typeof data.expiresIn === 'string' && data.expiresIn.trim().length > 0
-    ? data.expiresIn.trim()
-    : undefined;
-  const refreshExpiresIn = typeof data.refreshExpiresIn === 'string' && data.refreshExpiresIn.trim().length > 0
-    ? data.refreshExpiresIn.trim()
-    : undefined;
-  const user = normalizeUser(data.user);
-
-  if (!token || !user) {
+  if (!user) {
     throw new Error('Phản hồi đăng nhập Google không hợp lệ. Vui lòng thử lại.');
   }
 
   return {
-    status: true,
-    token,
-    refreshToken,
-    expiresIn,
-    refreshExpiresIn,
+    ...session,
     user,
   };
+}
+
+function parseRefreshTokenResponse(data: unknown): RefreshTokenResponse {
+  return parseAuthTokenResponse(
+    data,
+    'Không thể làm mới phiên đăng nhập. Vui lòng đăng nhập lại.',
+  );
 }
 
 function parseMeResponse(data: unknown): MeResponse {
@@ -345,6 +337,16 @@ export const AuthService = {
   async getMe(): Promise<MeResponse> {
     const response = await apiClient.get<unknown>(AUTH_ENDPOINTS.me);
     return parseMeResponse(response.data);
+  },
+
+  async refreshToken(payload: RefreshTokenRequest): Promise<RefreshTokenResponse> {
+    const response = await apiClient.post<unknown>(
+      AUTH_ENDPOINTS.refreshToken,
+      payload,
+      { skipAuth: true } as ApiRequestConfig,
+    );
+
+    return parseRefreshTokenResponse(response.data);
   },
 
   async logout(): Promise<void> {

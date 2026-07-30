@@ -4,10 +4,12 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
+import type { PersistedAuthSession } from '@/types';
 
 export const StorageKeys = {
   ACCESS_TOKEN: '@flixtor/access_token',
   REFRESH_TOKEN: '@flixtor/refresh_token',
+  AUTH_SESSION: '@flixtor/auth_session',
   AUTH_PROVIDER: '@flixtor/auth_provider',
   USER: '@flixtor/user',
   SELECTED_PROFILE: '@flixtor/selected_profile',
@@ -23,6 +25,30 @@ const AUTH_TOKEN_SERVICE = 'com.flixtor.auth.access-token';
 const AUTH_TOKEN_ACCOUNT = 'access-token';
 
 let cachedAccessToken: string | null | undefined;
+let cachedRefreshToken: string | null | undefined;
+let cachedAuthSession: PersistedAuthSession | null | undefined;
+
+function normalizeAuthSession(value: unknown): PersistedAuthSession | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const accessTokenExpiresAt = 'accessTokenExpiresAt' in value
+    && typeof value.accessTokenExpiresAt === 'number'
+    && Number.isFinite(value.accessTokenExpiresAt)
+    ? value.accessTokenExpiresAt
+    : null;
+  const refreshTokenExpiresAt = 'refreshTokenExpiresAt' in value
+    && typeof value.refreshTokenExpiresAt === 'number'
+    && Number.isFinite(value.refreshTokenExpiresAt)
+    ? value.refreshTokenExpiresAt
+    : null;
+
+  return {
+    accessTokenExpiresAt,
+    refreshTokenExpiresAt,
+  };
+}
 
 /**
  * Store a value (auto JSON stringifies objects)
@@ -161,7 +187,38 @@ export const TokenStorage = {
 
     await removeItem(StorageKeys.ACCESS_TOKEN);
   },
-  getRefreshToken: () => getItem<string>(StorageKeys.REFRESH_TOKEN),
-  setRefreshToken: (token: string) => setItem(StorageKeys.REFRESH_TOKEN, token),
-  removeRefreshToken: () => removeItem(StorageKeys.REFRESH_TOKEN),
+  getRefreshToken: async (): Promise<string | null> => {
+    if (cachedRefreshToken !== undefined) {
+      return cachedRefreshToken;
+    }
+
+    const refreshToken = await getItem<string>(StorageKeys.REFRESH_TOKEN);
+    cachedRefreshToken = refreshToken;
+    return refreshToken;
+  },
+  setRefreshToken: async (token: string) => {
+    cachedRefreshToken = token;
+    await setItem(StorageKeys.REFRESH_TOKEN, token);
+  },
+  removeRefreshToken: async () => {
+    cachedRefreshToken = null;
+    await removeItem(StorageKeys.REFRESH_TOKEN);
+  },
+  getAuthSession: async (): Promise<PersistedAuthSession | null> => {
+    if (cachedAuthSession !== undefined) {
+      return cachedAuthSession;
+    }
+
+    const session = normalizeAuthSession(await getItem<unknown>(StorageKeys.AUTH_SESSION));
+    cachedAuthSession = session;
+    return session;
+  },
+  setAuthSession: async (session: PersistedAuthSession) => {
+    cachedAuthSession = session;
+    await setItem(StorageKeys.AUTH_SESSION, session);
+  },
+  removeAuthSession: async () => {
+    cachedAuthSession = null;
+    await removeItem(StorageKeys.AUTH_SESSION);
+  },
 };

@@ -3,6 +3,7 @@ import axios, {
   type AxiosRequestConfig,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { ACCESS_TOKEN_REFRESH_BUFFER_MS, isTokenExpired } from '@/features/auth/utils/authSession';
 import {
   getItem,
   setItem,
@@ -23,6 +24,7 @@ const API_SERVER_BASE_URLS: Record<ApiServerKey, string> = {
 
 interface AppRequestConfig extends InternalAxiosRequestConfig {
   skipAuth?: boolean;
+  _retry?: boolean;
 }
 
 export interface ApiRequestConfig extends AxiosRequestConfig {
@@ -30,8 +32,12 @@ export interface ApiRequestConfig extends AxiosRequestConfig {
 }
 
 type UnauthorizedHandler = () => void | Promise<void>;
+type TokenRefreshTrigger = 'preflight' | 'unauthorized';
+type TokenRefreshHandler = (trigger: TokenRefreshTrigger) => Promise<string | null>;
 
 let unauthorizedHandler: UnauthorizedHandler | null = null;
+let tokenRefreshHandler: TokenRefreshHandler | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
 export const API_SERVER_OPTIONS = [
   {
@@ -105,6 +111,60 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): voi
   unauthorizedHandler = handler;
 }
 
+export function setTokenRefreshHandler(handler: TokenRefreshHandler | null): void {
+  tokenRefreshHandler = handler;
+}
+
+async function runTokenRefresh(trigger: TokenRefreshTrigger): Promise<string | null> {
+  if (!tokenRefreshHandler) {
+    return null;
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        return await tokenRefreshHandler(trigger);
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+
+  return refreshPromise;
+}
+
+async function getAccessTokenForRequest(currentToken: string | null): Promise<string | null> {
+  const [refreshToken, authSession] = await Promise.all([
+    TokenStorage.getRefreshToken(),
+    TokenStorage.getAuthSession(),
+  ]);
+  const shouldTryRefresh = Boolean(refreshToken)
+    && (
+      !currentToken
+      || isTokenExpired(authSession?.accessTokenExpiresAt, ACCESS_TOKEN_REFRESH_BUFFER_MS)
+    );
+
+  if (!shouldTryRefresh) {
+    return currentToken;
+  }
+
+  try {
+    const refreshedToken = await runTokenRefresh('preflight');
+    return refreshedToken ?? currentToken;
+  } catch (error) {
+    if (currentToken && !isTokenExpired(authSession?.accessTokenExpiresAt)) {
+      console.warn('[API] Failed to refresh access token before request. Using current token.', error);
+      return currentToken;
+    }
+
+    if (unauthorizedHandler) {
+      await unauthorizedHandler();
+    }
+
+    throw error;
+  }
+}
+
 export const apiClient = axios.create({
   baseURL: DEFAULT_BASE_URL,
   timeout: 20000,
@@ -122,7 +182,8 @@ apiClient.interceptors.request.use(async (config: AppRequestConfig) => {
       return config;
     }
 
-    const token = await TokenStorage.getAccessToken();
+    const currentToken = await TokenStorage.getAccessToken();
+    const token = await getAccessTokenForRequest(currentToken);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -149,8 +210,25 @@ apiClient.interceptors.response.use(
       console.warn(`[API] ${method} ${url} failed with code ${error.code}.`);
     }
 
-    if (status === 401 && !requestConfig?.skipAuth && unauthorizedHandler) {
-      await unauthorizedHandler();
+    if (status === 401 && requestConfig && !requestConfig.skipAuth) {
+      if (!requestConfig._retry) {
+        requestConfig._retry = true;
+
+        try {
+          const refreshedToken = await runTokenRefresh('unauthorized');
+
+          if (refreshedToken) {
+            requestConfig.headers.Authorization = `Bearer ${refreshedToken}`;
+            return apiClient(requestConfig);
+          }
+        } catch (refreshError) {
+          console.warn('[API] Failed to refresh access token after 401.', refreshError);
+        }
+      }
+
+      if (unauthorizedHandler) {
+        await unauthorizedHandler();
+      }
     }
 
     return Promise.reject(error);

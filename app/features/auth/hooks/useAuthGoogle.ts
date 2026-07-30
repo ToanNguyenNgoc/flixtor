@@ -129,6 +129,8 @@ export function useAuthGoogle(): UseAuthGoogleResult {
         authProvider: 'google',
         token: backendResponse.token,
         refreshToken: backendResponse.refreshToken,
+        expiresIn: backendResponse.expiresIn,
+        refreshExpiresIn: backendResponse.refreshExpiresIn,
         user: backendResponse.user,
       });
 

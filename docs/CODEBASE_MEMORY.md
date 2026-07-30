@@ -24,7 +24,7 @@ index.js
 
 App.tsx (AppInitializer useEffect)
   ├── initializeApiServer() — đọc `@flixtor/app_settings` → set runtime baseURL cho axiosClient
-  ├── restoreSession()        — đọc JWT từ Keychain/legacy storage → gọi `/api/auth/me`
+  ├── restoreSession()        — đọc access token + refresh token + session expiry metadata, tự refresh nếu token sắp/hết hạn rồi mới gọi `/api/auth/me`
   ├── initMyList()            — đọc my list từ AsyncStorage
   ├── initializeContinueWatching() — đọc continue watching từ AsyncStorage
   └── BootSplash.hide({ fade: true })
@@ -86,7 +86,7 @@ Deeplink hiện có:
 
 | Store | File | Persisted |
 |---|---|---|
-| `useAuthStore` | `features/auth/store/authStore.ts` | Keychain cho access token + AsyncStorage cho refresh token/user/auth provider |
+| `useAuthStore` | `features/auth/store/authStore.ts` | Keychain cho access token + AsyncStorage cho refresh token/user/auth provider/session expiry metadata |
 | `useProfileStore` | `features/profile/store/profileStore.ts` | Stub/no-op (guest profile flow đã bypass) |
 | `useMyListStore` | `features/my-list/store/myListStore.ts` | AsyncStorage (movies array) |
 | `usePlayerStore` | `features/player/store/playerStore.ts` | AsyncStorage (continueWatching) |
@@ -126,9 +126,9 @@ Hooks và stores không cần sửa.
 
 **`app/services/api/axiosClient.ts`**:
 - `baseURL` runtime mặc định là `https://flix-api.longdc.click`, vẫn có thể đổi qua `@flixtor/app_settings` cho data server phim
-- Auth endpoints `/api/auth/login` và `/api/auth/me` gọi cố định về `https://flix-api.longdc.click` để không bị ảnh hưởng bởi toggle data server
-- Request interceptor: tự động lấy JWT từ `TokenStorage` (Keychain trước, AsyncStorage fallback/migration) và gắn `Authorization: Bearer {token}`
-- Response interceptor: log lỗi có kiểm soát, không log token; gặp `401` sẽ gọi unauthorized handler để clear session nhưng vẫn giữ app ở guest mode
+- Auth endpoints `/api/auth/login`, `/api/auth/refresh-token` và `/api/auth/me` gọi cố định về `https://flix-api.longdc.click` để không bị ảnh hưởng bởi toggle data server
+- Request interceptor: tự động lấy JWT từ `TokenStorage`, kiểm tra `expiresIn` đã persist thành timestamp, và chủ động refresh khi access token sắp hết hạn trước khi gắn `Authorization: Bearer {token}`
+- Response interceptor: log lỗi có kiểm soát, không log token; gặp `401` sẽ thử refresh/retry đúng 1 lần, nhiều request đồng thời dùng chung một promise refresh, chỉ clear session khi refresh thất bại
 - Exported wrappers: `get<T>`, `post<T>`, `put<T>`, `del<T>` (type-safe)
 
 **`app/services/api/systemService.ts`**:
@@ -144,11 +144,12 @@ Hooks và stores không cần sửa.
 
 **`app/features/auth/services/authService.ts`**:
 - `login(payload)` → `POST /api/auth/login`
+- `refreshToken(payload)` → `POST /api/auth/refresh-token`
 - `register(payload)` → `POST /api/auth/register`
 - `forgotPassword(payload)` → `POST /api/auth/forgot-password`
 - `resetPassword(payload)` → `POST /api/auth/reset-password`
 - `getMe()` → `GET /api/auth/me`
-- Parse response defensively: bắt buộc phải có `status: true`, `token` và `user` hợp lệ trước khi update store; login/register đều không crash nếu backend trả sai format
+- Parse response defensively: login/register/google/refresh đều normalize `token`, `refreshToken`, `expiresIn`, `refreshExpiresIn`; các response có user vẫn bắt buộc `status: true` và `user` hợp lệ trước khi update store
 
 **`app/features/history/services/userHistoryService.ts`**:
 - `saveHistory(payload)` → `POST /api/user/history`
@@ -158,7 +159,7 @@ Hooks và stores không cần sửa.
 
 **Auth UX hiện tại**:
 - App không bắt buộc đăng nhập để xem phim; guest có thể vào thẳng Home/Search/Watch
-- `restoreSession()` vẫn chạy lúc khởi tạo app để phục hồi tài khoản nếu trước đó user đã login/register
+- `restoreSession()` vẫn chạy lúc khởi tạo app để phục hồi tài khoản nếu trước đó user đã login/register; nếu access token sắp hết hạn hoặc đã hết hạn nhưng còn refresh token hợp lệ thì app sẽ tự gọi refresh trước khi lấy `/me`
 - `ProfileScreen` có 2 mode:
   - guest mode: hiện CTA `Đăng nhập tài khoản` và `Đăng ký tài khoản`
   - authenticated mode: hiện hồ sơ thật + refresh profile + logout
