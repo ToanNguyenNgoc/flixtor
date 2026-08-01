@@ -21,6 +21,69 @@
 
 ## Proposed Features
 
+### ABI Matrix Build Presets
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi giảm `reactNativeArchitectures` để fix `installDebug` trên emulator (2026-08-01)
+- **Mô tả**: Thêm preset/script rõ ràng cho từng môi trường dev như `arm64-v8a` (Apple Silicon emulator/device), `x86_64` (Intel emulator) và full ABI matrix khi cần QA rộng hơn.
+- **Files dự kiến**: `android/gradle.properties`, `package.json`, có thể thêm script docs
+- **Priority**: medium
+
+### Android Debug APK Size Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi phát hiện APK debug ~325MB trước khi giảm ABI (2026-08-01)
+- **Mô tả**: Rà module native, packaging và symbols để biết phần nào đang làm APK debug phình mạnh, từ đó cân nhắc thêm split hoặc tối ưu build dev.
+- **Files dự kiến**: `android/app/build.gradle`, `android/gradle.properties`, dependencies native liên quan
+- **Priority**: medium
+
+### Emulator Storage Guardrail
+- **Status**: proposed
+- **Nguồn**: follow-up sau lỗi `INSTALL_FAILED_INSUFFICIENT_STORAGE` trên AVD (2026-08-01)
+- **Mô tả**: Thêm checklist hoặc script kiểm tra nhanh dung lượng `/data` trước khi `installDebug`, để báo sớm khi emulator sắp đầy thay vì chờ fail ở cuối build.
+- **Files dự kiến**: `package.json`, `docs/*`, có thể thêm script shell nhỏ
+- **Priority**: low
+
+### Splash Overlay Fade Animation
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa splash Android full-screen (2026-08-01)
+- **Mô tả**: Thêm fade-out ngắn giữa splash overlay full-screen và màn đầu tiên của app để chuyển cảnh mềm hơn, đặc biệt trên máy Android tải JS nhanh/chậm không đều.
+- **Files dự kiến**: `App.tsx`, `app/features/auth/screens/SplashScreen.tsx`
+- **Priority**: medium
+
+### BootSplash Asset Pipeline Cleanup
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi phát hiện `drawable/bootsplash_logo.png` full-screen không phải resource Android thực sự được ưu tiên (2026-08-01)
+- **Mô tả**: Rà và đặt lại tên/nguồn gốc các file splash Android để tránh nhầm giữa logo vuông theo density và artwork full-screen dùng trong React Native overlay.
+- **Files dự kiến**: `android/app/src/main/res/drawable*/*`, `app/assets/image/bootsplash.png`
+- **Priority**: medium
+
+### Splash First-Frame Visual Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm splash overlay hybrid cho Android (2026-08-01)
+- **Mô tả**: Bổ sung checklist hoặc test quay màn hình khi cold start để kiểm tra không có flash trắng, không double-splash và ảnh phủ đúng full màn hình trên các density Android khác nhau.
+- **Files dự kiến**: `docs/*`, có thể thêm flow test nếu team muốn
+- **Priority**: low
+
+### Android Tab Press Regression Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `MainNavigator` Android không chuyển tab (2026-08-01)
+- **Mô tả**: Thêm checklist hoặc test E2E tối thiểu cho việc chạm từng tab trong `MainNavigator`, đặc biệt sau mỗi lần nâng `@react-navigation/*` alpha.
+- **Files dự kiến**: `docs/*`, có thể thêm detox/maestro flow nếu team muốn
+- **Priority**: medium
+
+### Shared Tab Config Extraction
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm Android custom tab bar vào `MainNavigator` (2026-08-01)
+- **Mô tả**: Tách cấu hình tab label/icon/sf-symbol sang module riêng để iOS native tabs và Android custom tabs dùng chung một nguồn, giảm drift khi đổi icon hoặc thêm tab mới.
+- **Files dự kiến**: `app/navigation/MainNavigator.tsx`, có thể thêm `app/navigation/tabConfig.ts`
+- **Priority**: low
+
+### Navigation Package Upgrade Validation
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi workaround `bottom-tabs` alpha trên Android (2026-08-01)
+- **Mô tả**: Khi React Navigation có bản alpha/beta mới hơn, rà lại xem lỗi tab press đã hết chưa để cân nhắc quay lại implementation mặc định và bớt code workaround.
+- **Files dự kiến**: `package.json`, `package-lock.json`, `app/navigation/MainNavigator.tsx`
+- **Priority**: medium
+
 ### Shared Absolute Fill Style Helper Audit
 - **Status**: proposed
 - **Nguồn**: follow-up sau khi thay toàn bộ `StyleSheet.absoluteFillObject` (2026-08-01)

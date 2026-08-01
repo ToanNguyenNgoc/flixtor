@@ -52,6 +52,55 @@
 
 **Lý do:** User yêu cầu fix dứt điểm lỗi TypeScript `ts(2551)` cho toàn bộ `StyleSheet.absoluteFillObject`.
 
+## 2026-08-01 — Sửa MainNavigator Android không chuyển được tab
+
+**Files đã sửa:**
+- `app/navigation/MainNavigator.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Viết `AndroidTabBar` riêng cho `MainNavigator` và render qua prop `tabBar` khi chạy trên Android.
+- Tab press trên Android giờ đi qua `navigation.emit('tabPress')` và `CommonActions.navigate(...)` trực tiếp, không còn phụ thuộc vào phần tab bar mặc định của `@react-navigation/bottom-tabs` alpha.
+- Giữ iOS theo implementation hiện có, đồng thời bảo toàn label/icon hiện tại và thêm `tabBarHideOnKeyboard` cho Android.
+
+**Lý do:** User báo `MainNavigator` trên Android không thể chuyển tab khi bấm vào bottom tabs.
+
+## 2026-08-01 — Sửa splash Android không hiển thị full màn hình
+
+**Files đã sửa:**
+- `App.tsx`
+- `app/assets/image/index.ts`
+- `app/assets/image/bootsplash.png` [NEW]
+- `app/features/auth/screens/SplashScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Thêm asset `app/assets/image/bootsplash.png` từ artwork full-screen hiện có để React Native có thể render splash toàn màn hình ổn định.
+- `SplashScreen.tsx` được đổi từ text/loading đơn giản sang ảnh full-screen và nhận `onLayout` callback.
+- `App.tsx` không còn hide native `BootSplash` ngay sau bootstrap; thay vào đó app chờ `SplashScreen` overlay render xong frame đầu tiên rồi mới `BootSplash.hide({ fade: true })`, nhờ vậy Android không còn chỉ hiện logo vuông nhỏ ở giữa trong suốt lúc bootstrap.
+
+**Lý do:** User báo splash Android không full màn hình dù đã có artwork ở `drawable/bootsplash_logo.png`.
+
+## 2026-08-01 — Sửa lỗi `installDebug` không cài được app trên emulator
+
+**Files đã sửa:**
+- `android/gradle.properties`
+- `android/app/build.gradle`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Đổi mặc định `reactNativeArchitectures` từ `armeabi-v7a,arm64-v8a,x86,x86_64` xuống `arm64-v8a,x86_64` để giảm kích thước APK debug cho máy dev hiện tại.
+- Sửa cú pháp khai báo `ndkVersion`, `buildToolsVersion`, `compileSdk` sang dạng `=` trong `android/app/build.gradle` để bớt warning deprecated của Gradle 9.
+- Xác nhận lại bằng build + `adb install` rằng APK debug giảm từ khoảng `325M` xuống `189M` và cài được lại trên emulator.
+
+**Lý do:** `:app:installDebug` fail với `INSTALL_FAILED_INSUFFICIENT_STORAGE` do APK debug universal quá lớn so với dung lượng trống còn lại của emulator.
+
 ---
 
 ## 2026-07-05 — Fix WatchScreen: video bị tràn ra ngoài màn hình

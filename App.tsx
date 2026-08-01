@@ -2,7 +2,7 @@
  * Flixtor — Root App Component
  * Sets up all providers: QueryClient, GestureHandler, SafeArea, Navigation
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { BrandNavigator } from '@/brand';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import HomeScreenSkeleton from '@/features/home/components/HomeScreenSkeleton';
 import { navigationRef } from '@/brand/navigator/brand.navigate';
+import SplashScreen from '@/features/auth/screens/SplashScreen';
 
 const rootStyle = StyleSheet.create({ root: { flex: 1 } }).root;
 const QUERY_STALE_TIME = 1000 * 60 * 2;
@@ -55,6 +56,7 @@ export default function App() {
   const loadHistory = useWatchHistoryStore(state => state.loadHistory);
   const restoreSession = useAuthStore(state => state.restoreSession);
   const [isAppReady, setIsAppReady] = useState(false);
+  const hasHiddenNativeSplashRef = useRef(false);
   const {
     isCheckingSystemStatus,
     isBlocked,
@@ -80,12 +82,19 @@ export default function App() {
   useEffect(() => {
     bootstrapApp().finally(() => {
       setIsAppReady(true);
-      BootSplash.hide({ fade: true });
     });
   }, [bootstrapApp]);
 
   const shouldShowLoading = !isAppReady || (isCheckingSystemStatus && !isBlocked);
   const activeLinking = isBlocked ? undefined : linking;
+  const handleSplashScreenLayout = useCallback(() => {
+    if (hasHiddenNativeSplashRef.current) {
+      return;
+    }
+
+    hasHiddenNativeSplashRef.current = true;
+    BootSplash.hide({ fade: true });
+  }, []);
 
   return (
     <GestureHandlerRootView style={rootStyle}>
@@ -94,7 +103,12 @@ export default function App() {
           <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
           <BottomSheetModalProvider>
             <NavigationContainer linking={activeLinking} ref={navigationRef}>
-              {shouldShowLoading ? <HomeScreenSkeleton topInset={140} /> : null}
+              {shouldShowLoading ? (
+                <>
+                  <HomeScreenSkeleton topInset={140} />
+                  <SplashScreen onLayout={handleSplashScreenLayout} />
+                </>
+              ) : null}
               {!shouldShowLoading && isBlocked ? (
                 <BrandNavigator
                   isRefreshing={isCheckingSystemStatus}

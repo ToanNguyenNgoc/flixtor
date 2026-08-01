@@ -41,7 +41,7 @@ App.tsx (current bootstrap flow)
   │     ├── `status === true && blocked === true`  → render `BrandNavigator`
   │     ├── còn lại / lỗi / timeout / sai format   → fallback `RootNavigator`
   │     └── khi app resume từ background → re-check `system-status` một lần với cooldown
-  └── giữ `BootSplash` + `SplashScreen` tới khi bootstrap và lần check đầu hoàn tất
+  └── render `SplashScreen` overlay full-screen ngay khi app frame đầu tiên lên, rồi mới `BootSplash.hide({ fade: true })` sau `onLayout` của overlay để tránh Android chỉ hiện logo vuông ở giữa trong lúc bootstrap
 
 Providers wrap order:
   GestureHandlerRootView
@@ -57,6 +57,9 @@ Providers wrap order:
 - `babel.config.js` dùng `module:@react-native/babel-preset` và `react-native-worklets/plugin` làm plugin cuối để tương thích `react-native-reanimated@4`.
 - `metro.config.js` được bọc bằng `wrapWithReanimatedMetroConfig(...)` để Reanimated 4 hoạt động đúng cùng SVG transformer hiện có.
 - React Navigation 8 alpha hiện vẫn cần 3 patch-package patch nội bộ cho `@react-navigation/native` và nested `@react-navigation/elements`; patch files đã được regenerate đúng version hiện tại để `postinstall` sạch warning.
+- `MainNavigator` hiện dùng tab bar do app tự render riêng trên Android; iOS vẫn giữ implementation mặc định/native khi khả dụng. Mục tiêu là tránh regression tab press của `@react-navigation/bottom-tabs` alpha trên Android trong khi vẫn giữ icon SVG hiện tại.
+- Android splash hiện là mô hình hybrid: native `react-native-bootsplash` vẫn dùng cho launch rất sớm, nhưng artwork full-screen được hiển thị bởi `app/features/auth/screens/SplashScreen.tsx` ngay frame React Native đầu tiên vì Android 12+ không render splash image full-screen tùy ý từ `bootSplashLogo`.
+- Android debug build mặc định chỉ đóng gói `arm64-v8a,x86_64` qua `reactNativeArchitectures` để APK dev bớt phình; có thể override từ CLI nếu cần ABI khác.
 - `@tanstack/react-query` đã lên v5, nên các query dùng `gcTime`/`initialPageParam` theo API mới.
 - Repo hiện typecheck sạch với baseline mới; `service.ts` được giữ lại như no-op placeholder vì `react-native-track-player` không còn nằm trong stack app và không còn được register ở `index.js`.
 - iOS hiện có patch-package `patches/react-native-view-shot+4.0.3.patch` để `react-native-view-shot` nhận đúng `RCTScrollViewComponentView` trên React Native 0.86 / New Architecture.
