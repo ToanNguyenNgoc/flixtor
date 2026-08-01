@@ -10,6 +10,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import type { KKMovie } from '@/types';
 import { getPosterSource } from '@/utils/image';
 import { Colors, Typography, Spacing, BorderRadius } from '@/config/theme';
+import FastImage from 'react-native-fast-image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - Spacing.base * 2 - Spacing.sm * 2) / 3;
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: Colors.backgroundElevated,
   },
-  image: { ...StyleSheet.absoluteFillObject },
+  image: { ...StyleSheet.absoluteFill },
   gradient: {
     position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%',
   },

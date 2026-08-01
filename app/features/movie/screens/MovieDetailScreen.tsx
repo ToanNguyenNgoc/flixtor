@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
 
   // Backdrop
   backdrop: { height: 240, position: 'relative' },
-  backdropImage: { ...StyleSheet.absoluteFillObject },
+  backdropImage: { ...StyleSheet.absoluteFill },
   backdropGradient: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
 
   // Info

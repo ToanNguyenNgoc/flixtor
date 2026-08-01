@@ -243,6 +243,7 @@ Hooks và stores không cần sửa.
 - Helper ảnh trong `app/utils/image.ts` chuẩn hoá URL `phimimg.com` và hiện trả trực tiếp URL gốc thay vì đi qua proxy `phimapi.com/image.php`, vì endpoint proxy không còn hoạt động ổn định.
 - `prefetchImages()` preload trực tiếp URL ảnh gốc đã normalize.
 - `CachedImage` giữ fallback từ URL chính hiện tại sang placeholder, đồng thời vẫn chấp nhận source URL đã được normalize sẵn.
+- `CachedImage` chủ động bật native `Image` fallback cho nguồn `.webp` và sẽ tự chuyển sang native fallback nếu `FastImage` báo lỗi decode/load, để poster remote vẫn hiện ổn định trên cả các máy kén định dạng/cache.
 
 ### HistoryScreen
 - Khi user đã đăng nhập, `HistoryScreen` gọi `GET /api/user/history?page=1&limit=20` qua React Query và hiển thị lịch sử xem dạng grid 2 cột.

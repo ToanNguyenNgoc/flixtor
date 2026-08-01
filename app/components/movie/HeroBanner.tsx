@@ -295,11 +295,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     opacity: 0.44,
   },
   backdropOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   accentOverlay: {
     position: 'absolute',
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     transform: [{ translateY: 12 }],
   },
   heroPoster: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: BorderRadius.lg,
   },
   posterOverlay: {

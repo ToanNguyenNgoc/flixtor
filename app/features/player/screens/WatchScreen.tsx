@@ -1661,7 +1661,7 @@ const styles = StyleSheet.create({
   },
 
   centerAbs: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center', justifyContent: 'center',
   },
   errorOverlay: { backgroundColor: 'rgba(0,0,0,0.82)' },
@@ -1826,7 +1826,7 @@ const styles = StyleSheet.create({
 
   // Drawer — absolute View, NOT Modal (see comment above)
   drawerContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'flex-end',
     zIndex: 999,

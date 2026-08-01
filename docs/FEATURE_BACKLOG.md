@@ -21,6 +21,48 @@
 
 ## Proposed Features
 
+### Shared Absolute Fill Style Helper Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thay toàn bộ `StyleSheet.absoluteFillObject` (2026-08-01)
+- **Mô tả**: Rà các style absolute lặp lại trong app và cân nhắc gom thành helper/style token dùng chung để giảm việc phải sửa tay nhiều file khi RN typings đổi lần nữa.
+- **Files dự kiến**: `app/config/theme.ts`, `app/components/*`, `app/features/*`
+- **Priority**: low
+
+### Watch Screen ESLint Cleanup
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi chạy lint cho nhóm file sửa `absoluteFillObject` (2026-08-01)
+- **Mô tả**: Dọn các warning/error cũ trong `WatchScreen.tsx` như `no-shadow` và `_ is defined but never used` để nhóm file player về trạng thái lint sạch.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`
+- **Priority**: medium
+
+### Overlay Layout Snapshot Check
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi đổi absolute overlay constants (2026-08-01)
+- **Mô tả**: Thêm checklist hoặc test snapshot nhẹ cho các màn có overlay toàn màn hình như hero, detail backdrop và watch drawer để bắt sớm regression layout khi nâng RN tiếp.
+- **Files dự kiến**: `docs/*`, có thể thêm test file nếu team muốn
+- **Priority**: low
+
+### Cached Image Failure Telemetry
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `CachedImage` không hiển thị poster `.webp` (2026-08-01)
+- **Mô tả**: Ghi nhận số lần `CachedImage` phải chuyển từ `FastImage` sang native fallback hoặc placeholder để biết domain/định dạng nào đang gây lỗi nhiều nhất trên thiết bị thật.
+- **Files dự kiến**: `app/components/common/CachedImage.tsx`, `services/analytics/*`
+- **Priority**: medium
+
+### Poster Placeholder With Dominant Color
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi ổn định pipeline ảnh remote (2026-08-01)
+- **Mô tả**: Thay skeleton/phẳng nền hiện tại bằng placeholder lấy dominant color hoặc gradient từ poster để giảm cảm giác flash khi ảnh tải chậm.
+- **Files dự kiến**: `app/components/common/CachedImage.tsx`, `app/utils/imageCache.ts`
+- **Priority**: medium
+
+### Shared Poster Retry Prefetch
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm native fallback cho `CachedImage` (2026-08-01)
+- **Mô tả**: Khi một poster từng lỗi nhưng tải lại thành công ở native fallback, prefetch lại URL đó theo batch nhẹ để các màn Home/Search/Detail sau đó ít phải decode lại hơn.
+- **Files dự kiến**: `app/components/common/CachedImage.tsx`, `app/utils/imageCache.ts`
+- **Priority**: low
+
 ### React Native 0.86 Native Build Validation
 - **Status**: proposed
 - **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)

@@ -17,6 +17,7 @@ import FilterBottomSheet from '../components/FilterBottomSheet';
 import { MOVIE_TYPE_LIST } from '@/services/api/endpoints';
 import { Icon } from '@/components/common';
 import { muiColor } from '@/themes';
+import FastImage from 'react-native-fast-image';
 
 type Route = RouteProp<MainTabParamList, 'Filter'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;

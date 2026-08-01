@@ -19,6 +19,39 @@
 
 **Lý do:** FastImage/axios không load được ảnh trên iOS vì ATS block. Video react-native-video chỉ phát audio (không có hình) trên Android vì cleartext traffic bị block do biến gradle chưa resolve.
 
+## 2026-08-01 — Sửa CachedImage không hiển thị poster `.webp`
+
+**Files đã sửa:**
+- `app/components/common/CachedImage.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Thêm nhận diện source remote `.webp` trong `CachedImage` để bật `FastImage` native fallback (`Image`) ngay từ đầu thay vì cố decode hoàn toàn bằng pipeline riêng của `FastImage`.
+- Khi lượt tải đầu bằng `FastImage` báo lỗi, component sẽ tự chuyển sang native fallback trước khi rơi về placeholder, giúp các URL ảnh hợp lệ nhưng kén decoder/cache vẫn hiển thị được.
+- Bỏ `console.log(targetSource)` thừa trong render path của `CachedImage`.
+
+**Lý do:** User báo `targetSource` đã có `uri` đúng nhưng poster từ `phimimg.com` dạng `.webp` vẫn không render trên app.
+
+## 2026-08-01 — Sửa toàn bộ lỗi `StyleSheet.absoluteFillObject`
+
+**Files đã sửa:**
+- `app/components/common/CachedImage.tsx`
+- `app/components/movie/HeroBanner.tsx`
+- `app/features/movie/screens/MovieDetailScreen.tsx`
+- `app/features/player/components/EmbedPlayer.tsx`
+- `app/features/player/screens/WatchScreen.tsx`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Thay toàn bộ chỗ dùng `StyleSheet.absoluteFillObject` trong app bằng `StyleSheet.absoluteFill` hoặc spread từ `StyleSheet.absoluteFill` tuỳ context để tương thích với typings React Native hiện tại.
+- Giữ nguyên layout tuyệt đối của backdrop, poster, loading overlay, drawer overlay và player overlay sau khi đổi constant style.
+- Xác nhận lại bằng `tsc` rằng lỗi `Property 'absoluteFillObject' does not exist on type 'typeof StyleSheet'` đã hết trên toàn bộ source app.
+
+**Lý do:** User yêu cầu fix dứt điểm lỗi TypeScript `ts(2551)` cho toàn bộ `StyleSheet.absoluteFillObject`.
+
 ---
 
 ## 2026-07-05 — Fix WatchScreen: video bị tràn ra ngoài màn hình
