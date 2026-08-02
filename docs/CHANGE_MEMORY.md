@@ -19,6 +19,139 @@
 
 **Lý do:** FastImage/axios không load được ảnh trên iOS vì ATS block. Video react-native-video chỉ phát audio (không có hình) trên Android vì cleartext traffic bị block do biến gradle chưa resolve.
 
+## 2026-08-02 — Fix triệt để bug xoay màn hình WatchScreen (portrait → landscape snap lại)
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+
+**Root cause:** `unlockAllOrientations()` bị gọi ở 3 nơi bất kể trạng thái auto-rotate. Khi auto-rotate **TẮT**, gọi `unlockAllOrientations()` giải phóng app lock → hệ thống (auto-rotate OFF) lập tức ép về portrait → màn hình "snap" lại dù vừa lock landscape.
+
+**3 chỗ đã sửa:**
+1. `handleDeviceOrientationChange` (line ~614): Khi device đến đúng orientation → chỉ clear `manualOrientationLockRef`, chỉ gọi `unlockAllOrientations()` nếu `isAutoRotateEnabledRef.current === true`.
+2. `useFocusEffect → getDeviceOrientation callback` (line ~661): Same fix.
+3. `toggleOrientation` timer (auto-rotate OFF, landscape case, line ~1328): Bỏ `unlockAllOrientations()` khỏi timer — chỉ clear lock guard, giữ nguyên `lockToLandscapeLeft/Right`.
+
+**Behavior sau fix:**
+- Auto-rotate **TẮT**: Lock cứng trái/phải theo `lastLandscapeOrientationRef`, không bao giờ unlock → ổn định.
+- Auto-rotate **BẬT**: Unlock sau khi sensor xác nhận → sensor tự do điều hướng (xoay full).
+
+---
+
+## 2026-08-02 — Sửa MainNavigator iOS bị nháy trắng khi chuyển tab Liquid Glass
+
+**Files đã sửa:**
+- `App.tsx`
+- `app/navigation/MainNavigator.tsx`
+- `app/features/auth/screens/SplashScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Truyền custom dark theme vào `NavigationContainer` để React Navigation không còn fallback sang `LightTheme` nền trắng trong lúc native tab/stack transition trên iOS.
+- `MainNavigator` thêm `sceneStyle` nền tối, tắt tab animation và giữ `inactiveBehavior: 'none'` để scene khi đổi tab ổn định hơn, giảm flash trắng trên iOS.
+- Với iPhone có `isLiquidGlassSupported`, tab bar native được ép `backgroundColor` và `shadowColor` sang trong suốt để glass bar không còn ám nền trắng.
+- `SplashScreen` đổi fallback background từ trắng sang nền tối của app để tránh các frame trắng ngắn nếu overlay render trước ảnh splash.
+
+**Lý do:** User báo trên iOS khi `isLiquidGlassSupported` bật, mỗi lần chuyển tab màn hình bị nháy trắng và tab bar nhìn trắng đục thay vì trong suốt.
+
+## 2026-08-02 — Bỏ overlay loading/splash React Native ở App bootstrap
+
+**Files đã sửa:**
+- `App.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Xóa `HomeScreenSkeleton` và `SplashScreen` overlay khỏi `NavigationContainer` khi app đang bootstrap.
+- Giữ native `BootSplash.hide({ fade: true })`, nhưng chuyển sang trigger bằng `useEffect` khi `shouldShowLoading` kết thúc để không còn phụ thuộc `onLayout` của overlay.
+- Cập nhật memory docs để phản ánh app không còn dùng hybrid React Native splash overlay trong startup flow.
+
+**Lý do:** User xác nhận phần overlay loading/splash này không còn cần thiết và muốn bỏ đi.
+
+## 2026-08-02 — Thêm background playback và Picture in Picture cho WatchScreen
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+- `android/app/src/main/AndroidManifest.xml`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- `WatchScreen` bật `playInBackground`, `playWhenInactive`, `enterPictureInPictureOnLeave` và `showNotificationControls` cho native `react-native-video`.
+- Thêm nút `PiP` trong control bar để user chủ động vào Picture in Picture; khi PiP active app sẽ tự đóng overlays/control phụ và save tiến độ ngay.
+- Gắn metadata title/subtitle/artwork vào `Video` source để lock screen / notification controls có nội dung đúng hơn.
+- Android manifest được bổ sung `android:supportsPictureInPicture="true"`, các quyền foreground media playback và `VideoPlaybackService` của `react-native-video`.
+
+**Lý do:** User muốn cập nhật tính năng xem trong nền và Picture in Picture cho màn xem phim.
+
+## 2026-08-02 — Sửa WatchScreen nhớ sai hướng landscape khi bấm nút xoay
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Thêm `returnLandscapeOrientationRef` để lưu lại landscape side gần nhất và dùng lại khi user chuyển portrait → landscape bằng nút xoay.
+- Khi thiết bị đang khóa auto-rotate, logic mới không còn suy ra lại hướng landscape từ trạng thái hiện tại của máy; thay vào đó app quay về đúng side trước đó (`LEFT` hoặc `RIGHT`) mà user vừa xem.
+- `handleOrientationChange` không còn được phép ghi đè hướng landscape đã nhớ nếu callback orientation đến trong lúc manual lock đang ép sang orientation khác; nhờ vậy các callback lệch nhịp lúc chuyển về portrait không còn làm đổi `LEFT` thành `RIGHT`.
+- Layout player giờ bám theo viewport thực thay vì state `currentOrientation`, và nhánh `auto-rotate OFF` không còn `unlockAllOrientations()` trước khi lock sang `LANDSCAPE-LEFT/RIGHT`; nhờ vậy app không còn rơi vào trạng thái UI landscape nhưng viewport thực vẫn portrait.
+- Khi auto-rotate của thiết bị đang mở, app vẫn ưu tiên theo hướng cầm máy hiện tại như trước.
+
+**Lý do:** User báo đang ở xoay trái, bấm về dọc rồi bấm xoay lại thì player nhảy sang xoay phải; mong muốn là quay lại đúng xoay trái khi thiết bị đang khóa xoay.
+
+## 2026-08-02 — Refactor lại flow orientation của WatchScreen để fix dứt điểm portrait ↔ landscape-left
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+
+**Thay đổi:**
+- Bỏ hẳn `lockToLandscape()` chung chung trong `WatchScreen`; screen giờ chỉ khóa bằng `lockToLandscapeLeft()` hoặc `lockToLandscapeRight()` để tránh native iOS tự suy ra lại side và làm lệch trái/phải sau khi vừa đi qua portrait.
+- Gom orientation state về 3 ref rõ ràng: `uiOrientationRef` (UI orientation thật), `preferredLandscapeOrientationRef` (landscape side cần nhớ), và `pendingOrientationRef` (orientation đang chờ native settle).
+- `handleOrientationChange` chỉ chấp nhận event khớp với pending target; các event lệch nhịp trong lúc đang transition không còn được phép ghi đè remembered landscape side.
+- Khi bấm về portrait, app ưu tiên lưu lại side landscape từ chính UI đang hiển thị thay vì từ `deviceOrientation`, nhờ vậy flow `landscape-left -> portrait -> landscape` quay lại đúng bên trái cả khi sensor/device orientation đang báo lệch.
+
+**Lý do:** Sau các bản fix trước, user vẫn gặp lỗi từ portrait quay lại landscape-left bị sai hướng hoặc render lệch khung. Root cause còn lại là `lockToLandscape()` và `deviceOrientation` vẫn xen vào flow nhớ side, làm state orientation không còn một nguồn sự thật ổn định.
+
+## 2026-08-02 — Đổi cặp nút xoay thủ công của WatchScreen sang portrait ↔ landscape-right
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+
+**Thay đổi:**
+- Thêm hằng `MANUAL_TOGGLE_LANDSCAPE_ORIENTATION = LANDSCAPE-RIGHT` để nút xoay thủ công luôn ưu tiên xoay phải khi đi từ portrait sang landscape.
+- Khi user bấm về portrait, `preferredLandscapeOrientationRef` cũng được reset về `LANDSCAPE-RIGHT`; nhờ vậy lần bấm xoay tiếp theo sẽ quay lại xoay phải thay vì giữ side trái trước đó.
+- Cập nhật memory docs để phản ánh behavior mới của manual rotate.
+
+**Lý do:** User xác nhận flow xoay đã ổn, nhưng muốn cặp xoay thủ công đổi từ `xoay trái ↔ dọc` sang `xoay phải ↔ dọc`.
+
+## 2026-08-02 — Thêm player preferences trong ProfileScreen cho hướng xoay và PiP
+
+**Files đã sửa:**
+- `app/features/player/store/playerPreferencesStore.ts` [NEW]
+- `app/features/player/screens/WatchScreen.tsx`
+- `app/features/profile/screens/ProfileScreen.tsx`
+- `app/utils/storage.ts`
+- `docs/CODEBASE_MEMORY.md`
+- `docs/CHANGE_MEMORY.md`
+- `docs/FEATURE_BACKLOG.md`
+
+**Thay đổi:**
+- Tạo `usePlayerPreferencesStore` persist riêng cho player preferences, lưu `manualLandscapeOrientation` (`left/right`, mặc định `left`) và `pictureInPictureEnabled` (mặc định `true`).
+- `ProfileScreen` có thêm section `Trình phát` cho cả guest mode lẫn authenticated mode, cho phép user đổi hướng xoay thủ công `LEFT/RIGHT` và bật/tắt `Picture in Picture` trực tiếp.
+- `WatchScreen` không còn hardcode hướng xoay thủ công hay PiP nữa; nút rotate giờ đọc side từ player preferences store, còn auto-enter/nút `PiP` chỉ bật khi setting PiP đang `ON`.
+- Bổ sung `StorageKeys.PLAYER_PREFERENCES` để tách riêng player settings khỏi `APP_SETTINGS` của API server.
+
+**Lý do:** User muốn cấu hình `RIGHT/LEFT` (mặc định `LEFT`) và `on/off Picture in Picture` (mặc định `on`) ngay trong `ProfileScreen.tsx`.
+
 ## 2026-08-01 — Sửa CachedImage không hiển thị poster `.webp`
 
 **Files đã sửa:**

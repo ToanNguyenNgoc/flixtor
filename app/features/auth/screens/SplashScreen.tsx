@@ -27,7 +27,7 @@ export default function SplashScreen({ onLayout }: SplashScreenProps) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.background,
   },
   image: {
     ...StyleSheet.absoluteFill,

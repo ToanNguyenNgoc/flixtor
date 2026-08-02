@@ -191,8 +191,18 @@ function renderAndroidTabBar(props: BottomTabBarProps) {
 }
 
 function getScreenOptions(routeName: VisibleTabRouteName) {
+  const tabBarStyle = useNativeLiquidGlassTabs
+    ? styles.iosLiquidGlassTabBar
+    : styles.defaultTabBar;
+
   return {
+    animation: 'none' as const,
+    inactiveBehavior: 'none' as const,
+    sceneStyle: styles.scene,
     tabBarLabel: getTabLabel(routeName),
+    tabBarStyle,
+    tabBarActiveTintColor: Colors.primary,
+    tabBarInactiveTintColor: Colors.icon,
     tabBarIcon: ({ focused }: { focused: boolean }) =>
       getTabBarIcon(routeName, focused),
   };
@@ -211,6 +221,9 @@ export default function MainNavigator() {
         tabBarHideOnKeyboard: isAndroid,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.icon,
+        sceneStyle: styles.scene,
+        animation: 'none',
+        inactiveBehavior: 'none',
       }}
     >
       <BottomTab.Screen
@@ -238,6 +251,18 @@ export default function MainNavigator() {
 }
 
 const styles = StyleSheet.create({
+  scene: {
+    backgroundColor: Colors.background,
+  },
+  defaultTabBar: {
+    backgroundColor: Colors.background,
+    borderTopColor: Colors.border,
+  },
+  iosLiquidGlassTabBar: {
+    backgroundColor: Colors.transparent,
+    shadowColor: Colors.transparent,
+    borderTopColor: Colors.transparent,
+  },
   androidTabBar: {
     flexDirection: 'row',
     alignItems: 'center',

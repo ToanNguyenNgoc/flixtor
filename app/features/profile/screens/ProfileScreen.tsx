@@ -1,10 +1,11 @@
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -20,6 +21,10 @@ import {
   Typography,
 } from '@/config/theme';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import {
+  usePlayerPreferencesStore,
+  type ManualLandscapeOrientationPreference,
+} from '@/features/player/store/playerPreferencesStore';
 import type { RootStackParamList } from '@/navigation/types';
 import { SvgIcons } from '@/assets/svg-component';
 import { muiColor } from '@/themes';
@@ -73,6 +78,104 @@ function ActionRow({
   );
 }
 
+interface OrientationOptionButtonProps {
+  active: boolean;
+  disabled?: boolean;
+  label: 'LEFT' | 'RIGHT';
+  onPress: () => void;
+}
+
+const OrientationOptionButton = memo(function OrientationOptionButton({
+  active,
+  disabled = false,
+  label,
+  onPress,
+}: OrientationOptionButtonProps) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.orientationOptionButton,
+        active && styles.orientationOptionButtonActive,
+        disabled && styles.preferenceRowDisabled,
+      ]}
+    >
+      <Text
+        style={[
+          styles.orientationOptionText,
+          active && styles.orientationOptionTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
+interface PlayerPreferencesCardProps {
+  disabled?: boolean;
+  manualLandscapeOrientation: ManualLandscapeOrientationPreference;
+  onSelectOrientation: (value: ManualLandscapeOrientationPreference) => void;
+  onTogglePictureInPicture: (value: boolean) => void;
+  pictureInPictureEnabled: boolean;
+}
+
+const PlayerPreferencesCard = memo(function PlayerPreferencesCard({
+  disabled = false,
+  manualLandscapeOrientation,
+  onSelectOrientation,
+  onTogglePictureInPicture,
+  pictureInPictureEnabled,
+}: PlayerPreferencesCardProps) {
+  return (
+    <View style={styles.preferencesCard}>
+      <View style={styles.preferenceBlock}>
+        <Text style={styles.preferenceTitle}>Hướng xoay thủ công</Text>
+        <Text style={styles.preferenceDescription}>
+          Chọn hướng player sẽ xoay tới khi bạn bấm nút rotate trong màn xem phim.
+        </Text>
+
+        <View style={styles.orientationOptionsRow}>
+          <OrientationOptionButton
+            active={manualLandscapeOrientation === 'left'}
+            disabled={disabled}
+            label="LEFT"
+            onPress={() => onSelectOrientation('left')}
+          />
+          <OrientationOptionButton
+            active={manualLandscapeOrientation === 'right'}
+            disabled={disabled}
+            label="RIGHT"
+            onPress={() => onSelectOrientation('right')}
+          />
+        </View>
+      </View>
+
+      <View style={styles.preferenceDivider} />
+
+      <View style={[styles.preferenceRow, disabled && styles.preferenceRowDisabled]}>
+        <View style={styles.preferenceCopy}>
+          <Text style={styles.preferenceTitle}>Picture in Picture</Text>
+          <Text style={styles.preferenceDescription}>
+            Cho phép video thu nhỏ khi rời app và hiện nút PiP trong player.
+          </Text>
+        </View>
+
+        <Switch
+          disabled={disabled}
+          ios_backgroundColor={Colors.border}
+          onValueChange={onTogglePictureInPicture}
+          thumbColor={Colors.white}
+          trackColor={{ false: Colors.border, true: Colors.primary }}
+          value={pictureInPictureEnabled}
+        />
+      </View>
+    </View>
+  );
+});
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation() as unknown as Nav;
@@ -81,8 +184,26 @@ export default function ProfileScreen() {
   const isStoreLoading = useAuthStore(state => state.isLoading);
   const getProfile = useAuthStore(state => state.getProfile);
   const logout = useAuthStore(state => state.logout);
+  const initializePlayerPreferences = usePlayerPreferencesStore(state => state.initialize);
+  const playerPreferencesHydrated = usePlayerPreferencesStore(state => state.isHydrated);
+  const manualLandscapeOrientation = usePlayerPreferencesStore(
+    state => state.manualLandscapeOrientation,
+  );
+  const pictureInPictureEnabled = usePlayerPreferencesStore(
+    state => state.pictureInPictureEnabled,
+  );
+  const setManualLandscapeOrientation = usePlayerPreferencesStore(
+    state => state.setManualLandscapeOrientation,
+  );
+  const setPictureInPictureEnabled = usePlayerPreferencesStore(
+    state => state.setPictureInPictureEnabled,
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useEffect(() => {
+    void initializePlayerPreferences();
+  }, [initializePlayerPreferences]);
 
   const handleOpenSettings = () => {
     navigation.navigate('Setting');
@@ -126,8 +247,27 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSelectOrientation = async (
+    value: ManualLandscapeOrientationPreference,
+  ) => {
+    if (!playerPreferencesHydrated || value === manualLandscapeOrientation) {
+      return;
+    }
+
+    await setManualLandscapeOrientation(value);
+  };
+
+  const handleTogglePictureInPicture = async (value: boolean) => {
+    if (!playerPreferencesHydrated || value === pictureInPictureEnabled) {
+      return;
+    }
+
+    await setPictureInPictureEnabled(value);
+  };
+
   const isGuest = !isAuthenticated || !user;
   const isBusy = isRefreshing || isLoggingOut || isStoreLoading;
+  const isPreferencesLoading = !playerPreferencesHydrated;
 
   if (isGuest) {
     return (
@@ -166,6 +306,17 @@ export default function ProfileScreen() {
               <Text style={styles.registerButtonText}>Đăng ký</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Trình phát</Text>
+          <PlayerPreferencesCard
+            disabled={isPreferencesLoading}
+            manualLandscapeOrientation={manualLandscapeOrientation}
+            onSelectOrientation={handleSelectOrientation}
+            onTogglePictureInPicture={handleTogglePictureInPicture}
+            pictureInPictureEnabled={pictureInPictureEnabled}
+          />
         </View>
 
         <View style={styles.section}>
@@ -246,6 +397,17 @@ export default function ProfileScreen() {
           <InfoRow label="Xác minh email" value={emailVerified} />
           <InfoRow label="Ngày tạo" value={createdAt} />
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Trình phát</Text>
+        <PlayerPreferencesCard
+          disabled={isPreferencesLoading}
+          manualLandscapeOrientation={manualLandscapeOrientation}
+          onSelectOrientation={handleSelectOrientation}
+          onTogglePictureInPicture={handleTogglePictureInPicture}
+          pictureInPictureEnabled={pictureInPictureEnabled}
+        />
       </View>
 
       <View style={styles.section}>
@@ -392,11 +554,79 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
+  preferencesCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: Spacing.base,
+  },
   infoRow: {
     borderBottomColor: Colors.divider,
     borderBottomWidth: 1,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
+  },
+  preferenceBlock: {
+    gap: Spacing.sm,
+  },
+  preferenceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.base,
+    justifyContent: 'space-between',
+  },
+  preferenceRowDisabled: {
+    opacity: 0.6,
+  },
+  preferenceCopy: {
+    flex: 1,
+    paddingRight: Spacing.base,
+  },
+  preferenceTitle: {
+    color: Colors.text,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
+  },
+  preferenceDescription: {
+    color: Colors.textSecondary,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 20,
+  },
+  preferenceDivider: {
+    backgroundColor: Colors.divider,
+    height: 1,
+    marginVertical: Spacing.base,
+  },
+  orientationOptionsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  orientationOptionButton: {
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundElevated,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: Spacing.base,
+  },
+  orientationOptionButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  orientationOptionText: {
+    color: Colors.text,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  orientationOptionTextActive: {
+    color: Colors.white,
   },
   infoLabel: {
     color: Colors.textMuted,

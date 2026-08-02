@@ -21,6 +21,69 @@
 
 ## Proposed Features
 
+### Player Background Playback Toggle
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm player preferences cho hướng xoay và PiP trong `ProfileScreen` (2026-08-02)
+- **Mô tả**: Tách riêng một toggle cho background playback/notification controls, vì hiện tại user mới chỉ bật/tắt được PiP chứ chưa kiểm soát phát nền.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/features/profile/screens/ProfileScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`
+- **Priority**: medium
+
+### Per-Profile Player Preferences
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm player preferences global trong `ProfileScreen` (2026-08-02)
+- **Mô tả**: Nếu sau này app có nhiều hồ sơ dùng chung trên một thiết bị, có thể lưu riêng hướng xoay/PiP theo từng profile thay vì dùng chung toàn app.
+- **Files dự kiến**: `app/features/profile/screens/ProfileScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`, có thể thêm storage key/profile linkage
+- **Priority**: medium
+
+### Player Preferences Reset Shortcut
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm section `Trình phát` trong `ProfileScreen` (2026-08-02)
+- **Mô tả**: Thêm nút reset nhanh để đưa player settings về mặc định `LEFT + PiP ON`, giúp QA và user đổi qua lại nhanh hơn khi test.
+- **Files dự kiến**: `app/features/profile/screens/ProfileScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`
+- **Priority**: low
+
+### PiP Return-To-Player Polish
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm PiP thủ công và auto-enter on leave (2026-08-02)
+- **Mô tả**: Tinh chỉnh UX khi user chạm vào cửa sổ PiP để quay lại app, đảm bảo orientation, immersive mode và control state được khôi phục mượt hơn.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, có thể thêm util/system UI liên quan
+- **Priority**: medium
+
+### Orientation State Cleanup In WatchScreen
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa nút xoay nhớ sai landscape side (2026-08-02)
+- **Mô tả**: Rà lại toàn bộ state/ref orientation trong `WatchScreen` để gom logic manual lock, device auto-rotate và remembered landscape side vào một module/hook dễ bảo trì hơn.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, có thể thêm hook mới trong `app/features/player/hooks/*`
+- **Priority**: medium
+
+### Playback Notification Metadata Enrichment
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi gắn title/subtitle/artwork cho notification controls (2026-08-02)
+- **Mô tả**: Làm giàu metadata phát nền bằng poster/backdrop tối ưu hơn, episode label nhất quán hơn và fallback artwork tốt hơn khi API thiếu ảnh.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/utils/image.ts`
+- **Priority**: low
+
+### iOS Liquid Glass Tab Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `MainNavigator` iOS bị nháy trắng khi đổi tab (2026-08-02)
+- **Mô tả**: Thêm checklist hoặc flow test ngắn để verify tab switch trên iPhone có/không có `isLiquidGlassSupported`, bao gồm các case Home ↔ Search, keyboard mở ở Search và resume app từ background.
+- **Files dự kiến**: `docs/*`, có thể thêm Maestro/Detox flow nếu team muốn
+- **Priority**: medium
+
+### Shared Navigation Theme Module
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi gắn explicit dark theme cho `NavigationContainer` (2026-08-02)
+- **Mô tả**: Tách navigation theme ra module riêng để stack, tabs, deep link shell và các test snapshot cùng dùng chung một nguồn token thay vì định nghĩa trực tiếp trong `App.tsx`.
+- **Files dự kiến**: `App.tsx`, có thể thêm `app/navigation/theme.ts`
+- **Priority**: low
+
+### iOS Native Tab Appearance Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi override tab bar transparency cho Liquid Glass (2026-08-02)
+- **Mô tả**: Rà lại `tabBarBlurEffect`, shadow và selected/unselected appearance trên các bản iOS mới để tinh chỉnh glass look nhất quán hơn với visual direction của app.
+- **Files dự kiến**: `app/navigation/MainNavigator.tsx`
+- **Priority**: medium
+
 ### ABI Matrix Build Presets
 - **Status**: proposed
 - **Nguồn**: follow-up sau khi giảm `reactNativeArchitectures` để fix `installDebug` trên emulator (2026-08-01)
@@ -42,13 +105,6 @@
 - **Files dự kiến**: `package.json`, `docs/*`, có thể thêm script shell nhỏ
 - **Priority**: low
 
-### Splash Overlay Fade Animation
-- **Status**: proposed
-- **Nguồn**: follow-up sau khi sửa splash Android full-screen (2026-08-01)
-- **Mô tả**: Thêm fade-out ngắn giữa splash overlay full-screen và màn đầu tiên của app để chuyển cảnh mềm hơn, đặc biệt trên máy Android tải JS nhanh/chậm không đều.
-- **Files dự kiến**: `App.tsx`, `app/features/auth/screens/SplashScreen.tsx`
-- **Priority**: medium
-
 ### BootSplash Asset Pipeline Cleanup
 - **Status**: proposed
 - **Nguồn**: follow-up sau khi phát hiện `drawable/bootsplash_logo.png` full-screen không phải resource Android thực sự được ưu tiên (2026-08-01)
@@ -56,10 +112,10 @@
 - **Files dự kiến**: `android/app/src/main/res/drawable*/*`, `app/assets/image/bootsplash.png`
 - **Priority**: medium
 
-### Splash First-Frame Visual Test
+### Native BootSplash Startup Smoke Test
 - **Status**: proposed
-- **Nguồn**: follow-up sau khi thêm splash overlay hybrid cho Android (2026-08-01)
-- **Mô tả**: Bổ sung checklist hoặc test quay màn hình khi cold start để kiểm tra không có flash trắng, không double-splash và ảnh phủ đúng full màn hình trên các density Android khác nhau.
+- **Nguồn**: follow-up sau khi bỏ overlay loading/splash React Native ở `App.tsx` (2026-08-02)
+- **Mô tả**: Thêm checklist hoặc flow test quay màn hình khi cold start để chắc native `BootSplash` tự nó không còn nháy trắng và biến mất đúng lúc sau bootstrap/system-status.
 - **Files dự kiến**: `docs/*`, có thể thêm flow test nếu team muốn
 - **Priority**: low
 

@@ -24,7 +24,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Orientation, { OrientationType } from 'react-native-orientation-locker';
 import { useQueryClient } from '@tanstack/react-query';
 import Video, {
-  type VideoRef, type OnLoadData, type OnProgressData,
+  type VideoRef,
+  type OnLoadData,
+  type OnPictureInPictureStatusChangedData,
+  type OnProgressData,
 } from 'react-native-video';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -86,6 +89,10 @@ import {
   getUserHistoryErrorMessage,
   UserHistoryService,
 } from '@/features/history/services/userHistoryService';
+import {
+  usePlayerPreferencesStore,
+} from '@/features/player/store/playerPreferencesStore';
+import { getMovieImageUrl } from '@/utils/image';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -116,32 +123,55 @@ const TOP_GESTURE_EXCLUSION = 72;
 type PlayerOrientation = 'portrait' | 'landscape';
 
 type LandscapeOrientation = 'LANDSCAPE-LEFT' | 'LANDSCAPE-RIGHT';
+type PlayerUiOrientation = 'PORTRAIT' | LandscapeOrientation;
 
-function mapToPlayerOrientation(orientation: OrientationType): PlayerOrientation | null {
+function getManualToggleLandscapeOrientation(
+  preference: 'left' | 'right',
+): LandscapeOrientation {
+  return preference === 'right'
+    ? OrientationType['LANDSCAPE-RIGHT']
+    : OrientationType['LANDSCAPE-LEFT'];
+}
+
+function normalizeUiOrientation(orientation: OrientationType): PlayerUiOrientation | null {
   if (
     orientation === OrientationType['LANDSCAPE-LEFT']
     || orientation === OrientationType['LANDSCAPE-RIGHT']
   ) {
-    return 'landscape';
+    return orientation;
   }
 
   if (
     orientation === OrientationType.PORTRAIT
     || orientation === OrientationType['PORTRAIT-UPSIDEDOWN']
   ) {
-    return 'portrait';
+    return OrientationType.PORTRAIT;
   }
 
   return null;
 }
 
-function matchesManualOrientation(
-  manualOrientation: PlayerOrientation,
-  deviceOrientation: OrientationType,
-) {
-  const mappedOrientation = mapToPlayerOrientation(deviceOrientation);
+function isLandscapeOrientation(
+  orientation: OrientationType | PlayerUiOrientation,
+): orientation is LandscapeOrientation {
+  return (
+    orientation === OrientationType['LANDSCAPE-LEFT']
+    || orientation === OrientationType['LANDSCAPE-RIGHT']
+  );
+}
 
-  return mappedOrientation === manualOrientation;
+function matchesRequestedOrientation(
+  requestedOrientation: PlayerUiOrientation,
+  actualOrientation: OrientationType,
+) {
+  if (requestedOrientation === OrientationType.PORTRAIT) {
+    return (
+      actualOrientation === OrientationType.PORTRAIT
+      || actualOrientation === OrientationType['PORTRAIT-UPSIDEDOWN']
+    );
+  }
+
+  return actualOrientation === requestedOrientation;
 }
 
 function getPreferredLandscapeOrientation(
@@ -190,13 +220,18 @@ interface PlayerMediaSurfaceProps {
   videoSourceType: 'm3u8' | 'embed' | 'none';
   videoUri: string;
   fallbackUri?: string;
+  metadataImageUri?: string;
+  metadataSubtitle?: string;
+  metadataTitle: string;
   videoRef: React.RefObject<VideoRef | null>;
+  enterPictureInPictureOnLeave: boolean;
   isZoomed: boolean;
   playing: boolean;
   muted: boolean;
   speed: number;
   progressUpdateInterval: number;
   onLoad: (data: OnLoadData) => void;
+  onPictureInPictureStatusChanged: (data: OnPictureInPictureStatusChangedData) => void;
   onReadyForDisplay: () => void;
   onProgress: (data: OnProgressData) => void;
   onBuffer: ({ isBuffering }: { isBuffering: boolean }) => void;
@@ -208,13 +243,18 @@ const PlayerMediaSurface = React.memo(function PlayerMediaSurface({
   videoSourceType,
   videoUri,
   fallbackUri,
+  metadataImageUri,
+  metadataSubtitle,
+  metadataTitle,
   videoRef,
+  enterPictureInPictureOnLeave,
   isZoomed,
   playing,
   muted,
   speed,
   progressUpdateInterval,
   onLoad,
+  onPictureInPictureStatusChanged,
   onReadyForDisplay,
   onProgress,
   onBuffer,
@@ -236,7 +276,15 @@ const PlayerMediaSurface = React.memo(function PlayerMediaSurface({
   return (
     <Video
       ref={videoRef}
-      source={{ uri: videoUri, type: videoSourceType === 'm3u8' ? 'm3u8' : undefined }}
+      source={{
+        uri: videoUri,
+        type: videoSourceType === 'm3u8' ? 'm3u8' : undefined,
+        metadata: {
+          title: metadataTitle,
+          subtitle: metadataSubtitle,
+          imageUri: metadataImageUri,
+        },
+      }}
       style={StyleSheet.absoluteFill}
       resizeMode={isZoomed ? 'cover' : 'contain'}
       paused={!playing}
@@ -244,9 +292,13 @@ const PlayerMediaSurface = React.memo(function PlayerMediaSurface({
       rate={speed}
       repeat={false}
       ignoreSilentSwitch="ignore"
-      playInBackground={false}
+      playInBackground
+      playWhenInactive
+      enterPictureInPictureOnLeave={enterPictureInPictureOnLeave}
+      showNotificationControls
       progressUpdateInterval={progressUpdateInterval}
       onLoad={onLoad}
+      onPictureInPictureStatusChanged={onPictureInPictureStatusChanged}
       onReadyForDisplay={onReadyForDisplay}
       onProgress={onProgress}
       onBuffer={onBuffer}
@@ -367,6 +419,19 @@ const QualityDrawer = React.memo(function QualityDrawer({
   );
 });
 
+function isPictureInPictureSupportedPlatform() {
+  if (Platform.OS === 'android') {
+    return typeof Platform.Version === 'number' && Platform.Version >= 26;
+  }
+
+  if (Platform.OS === 'ios') {
+    const iosVersion = parseInt(String(Platform.Version), 10);
+    return Number.isNaN(iosVersion) ? true : iosVersion >= 14;
+  }
+
+  return false;
+}
+
 // ─── WatchScreen ─────────────────────────────────────────────────────────────
 
 export default function WatchScreen() {
@@ -374,6 +439,14 @@ export default function WatchScreen() {
   const route = useRoute() as unknown as WatchRoute;
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
+  const initializePlayerPreferences = usePlayerPreferencesStore(state => state.initialize);
+  const playerPreferencesHydrated = usePlayerPreferencesStore(state => state.isHydrated);
+  const manualLandscapeOrientationPreference = usePlayerPreferencesStore(
+    state => state.manualLandscapeOrientation,
+  );
+  const pictureInPictureEnabled = usePlayerPreferencesStore(
+    state => state.pictureInPictureEnabled,
+  );
   const queryClient = useQueryClient();
   const authToken = useAuthStore(state => state.token);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -461,29 +534,45 @@ export default function WatchScreen() {
   const [selectedQuality, setSelectedQuality] = useState<Quality | null>(null);
   const [showQualityModal, setShowQualityModal] = useState(false);
   const [isChangingQuality, setIsChangingQuality] = useState(false);
+  const [isPictureInPictureActive, setIsPictureInPictureActive] = useState(false);
   const pendingSeekTime = useRef<number>(-1);
   const readyForDisplayTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [currentOrientation, setCurrentOrientation] = useState<PlayerOrientation>('landscape');
-  const [, setManualOrientationLock] = useState<PlayerOrientation | null>(null);
-  const [, setIsAutoRotateEnabled] = useState(true);
-  const manualOrientationLockRef = useRef<PlayerOrientation | null>(null);
+  const isAutoRotateEnabledRef = useRef(true);
   const deviceOrientationRef = useRef<OrientationType>(Orientation.getInitialOrientation());
-  const lastLandscapeOrientationRef = useRef<LandscapeOrientation>(OrientationType['LANDSCAPE-RIGHT']);
+  const initialUiOrientation = normalizeUiOrientation(Orientation.getInitialOrientation());
+  const manualToggleLandscapeOrientation = getManualToggleLandscapeOrientation(
+    manualLandscapeOrientationPreference,
+  );
+  const uiOrientationRef = useRef<PlayerUiOrientation>(initialUiOrientation ?? OrientationType.PORTRAIT);
+  const preferredLandscapeOrientationRef = useRef<LandscapeOrientation>(
+    initialUiOrientation && isLandscapeOrientation(initialUiOrientation)
+      ? initialUiOrientation
+      : manualToggleLandscapeOrientation,
+  );
+  const pendingOrientationRef = useRef<PlayerUiOrientation | null>(null);
+  const unlockAfterPendingOrientationRef = useRef(false);
   const doSaveRef = useRef<() => void>(() => {});
-  const manualOrientationTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const isEmbed = videoSource.type === 'embed';
   const [forceEmbedPlayback, setForceEmbedPlayback] = useState(false);
   const videoUri = selectedQuality ? selectedQuality.uri : videoSource.uri;
-  // isLandscape is driven purely by orientation state, NOT by viewport dimensions.
-  // Using isLandscapeViewport as a gate caused the layout to briefly render in portrait
-  // dimensions while the native side had already rotated, making video spill outside screen.
-  const isLandscape = currentOrientation === 'landscape';
-  // Actual pixel dimensions for the player surface
-  const playerW = isLandscape ? Math.max(window.width, window.height) : Math.min(window.width, window.height);
-  const playerH = isLandscape ? Math.min(window.width, window.height) : Math.max(window.width, window.height);
+  // Player layout must follow the REAL viewport. Otherwise a manual landscape
+  // command can render the landscape UI inside a still-portrait RN viewport.
+  const isLandscape = window.width > window.height;
+  const playerW = window.width;
+  const playerH = window.height;
   const isSingleEpisodeMovie = allEpisodes.length <= 1;
   const isEmbedPlayback = isEmbed || forceEmbedPlayback;
+  const canUsePictureInPicture = (
+    pictureInPictureEnabled
+    && !isEmbedPlayback
+    && isPictureInPictureSupportedPlatform()
+  );
+  const notificationArtworkUri = getMovieImageUrl(movie?.poster_url ?? movie?.thumb_url);
+
+  useEffect(() => {
+    void initializePlayerPreferences();
+  }, [initializePlayerPreferences]);
 
   const clearReadyForDisplayTimer = useCallback(() => {
     if (readyForDisplayTimerRef.current) {
@@ -530,107 +619,133 @@ export default function WatchScreen() {
 
   // ── Orientation ──────────────────────────────────────────────────────────
 
-  const restoreAppOrientation = useCallback(() => {
-    if (manualOrientationTimerRef.current) {
-      clearTimeout(manualOrientationTimerRef.current);
-      manualOrientationTimerRef.current = undefined;
+  const clearPendingOrientation = useCallback(() => {
+    pendingOrientationRef.current = null;
+    unlockAfterPendingOrientationRef.current = false;
+  }, []);
+
+  const lockToLandscapeSide = useCallback((
+    orientation: LandscapeOrientation,
+    shouldUnlockAfterSettle: boolean,
+  ) => {
+    preferredLandscapeOrientationRef.current = orientation;
+    pendingOrientationRef.current = orientation;
+    unlockAfterPendingOrientationRef.current = shouldUnlockAfterSettle;
+
+    if (orientation === OrientationType['LANDSCAPE-LEFT']) {
+      try { Orientation.lockToLandscapeLeft(); } catch (_) { /* ignore */ }
+      return;
     }
 
-    manualOrientationLockRef.current = null;
-    setManualOrientationLock(null);
-    setCurrentOrientation('portrait');
+    try { Orientation.lockToLandscapeRight(); } catch (_) { /* ignore */ }
+  }, []);
+
+  const lockToPortraitMode = useCallback(() => {
+    pendingOrientationRef.current = OrientationType.PORTRAIT;
+    unlockAfterPendingOrientationRef.current = false;
+
+    try { Orientation.lockToPortrait(); } catch (_) { /* ignore */ }
+  }, []);
+
+  const restoreAppOrientation = useCallback(() => {
+    clearPendingOrientation();
+    uiOrientationRef.current = OrientationType.PORTRAIT;
 
     try { Orientation.lockToPortrait(); } catch (_) { /* ignore */ }
     clearAndroidGestureExclusionRects();
     exitImmersiveVideoMode();
     StatusBar.setHidden(false, 'fade');
-  }, []);
+  }, [clearPendingOrientation]);
 
   const handleOrientationChange = useCallback((orientation: OrientationType) => {
-    const mappedOrientation = mapToPlayerOrientation(orientation);
-
-    if (!mappedOrientation) {
+    const normalizedOrientation = normalizeUiOrientation(orientation);
+    if (!normalizedOrientation) {
       return;
     }
 
-    if (
-      orientation === OrientationType['LANDSCAPE-LEFT']
-      || orientation === OrientationType['LANDSCAPE-RIGHT']
-    ) {
-      lastLandscapeOrientationRef.current = orientation;
-    }
-
-    const currentManualOrientation = manualOrientationLockRef.current;
-    if (currentManualOrientation && mappedOrientation !== currentManualOrientation) {
+    const pendingOrientation = pendingOrientationRef.current;
+    if (pendingOrientation && !matchesRequestedOrientation(pendingOrientation, orientation)) {
       return;
     }
 
-    setCurrentOrientation(previous =>
-      previous === mappedOrientation ? previous : mappedOrientation);
-  }, []);
+    uiOrientationRef.current = normalizedOrientation;
+
+    if (isLandscapeOrientation(normalizedOrientation)) {
+      preferredLandscapeOrientationRef.current = normalizedOrientation;
+    }
+
+    if (!pendingOrientation) {
+      return;
+    }
+
+    const shouldUnlockAfterSettle = unlockAfterPendingOrientationRef.current;
+    clearPendingOrientation();
+
+    if (shouldUnlockAfterSettle && isAutoRotateEnabledRef.current) {
+      try { Orientation.unlockAllOrientations(); } catch (_) { /* ignore */ }
+    }
+  }, [clearPendingOrientation]);
 
   const handleDeviceOrientationChange = useCallback((orientation: OrientationType) => {
     deviceOrientationRef.current = orientation;
-
-    const currentManualOrientation = manualOrientationLockRef.current;
-    if (!currentManualOrientation) {
-      return;
-    }
-
-    if (!matchesManualOrientation(currentManualOrientation, orientation)) {
-      return;
-    }
-
-    if (manualOrientationTimerRef.current) {
-      clearTimeout(manualOrientationTimerRef.current);
-      manualOrientationTimerRef.current = undefined;
-    }
-
-    manualOrientationLockRef.current = null;
-    setManualOrientationLock(null);
-
-    try { Orientation.unlockAllOrientations(); } catch (_) { /* ignore */ }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
+      if (!playerPreferencesHydrated) {
+        return undefined;
+      }
+
       let isActive = true;
 
-      manualOrientationLockRef.current = 'landscape';
-      setManualOrientationLock('landscape');
-      setCurrentOrientation('landscape');
+      clearPendingOrientation();
+      preferredLandscapeOrientationRef.current = manualToggleLandscapeOrientation;
       setShowControls(true);
       setIsZoomed(false);
 
-      try { Orientation.lockToLandscape(); } catch (_) { /* ignore */ }
-
-      Orientation.getAutoRotateState(state => {
-        if (isActive) {
-          setIsAutoRotateEnabled(Boolean(state));
-        }
-      });
-
-      Orientation.getOrientation(orientation => {
-        if (isActive) {
-          handleOrientationChange(orientation);
-        }
-      });
-
-      Orientation.getDeviceOrientation(orientation => {
-        if (isActive) {
-          deviceOrientationRef.current = orientation;
-
-          if (matchesManualOrientation('landscape', orientation)) {
-            manualOrientationLockRef.current = null;
-            setManualOrientationLock(null);
-
-            try { Orientation.unlockAllOrientations(); } catch (_) { /* ignore */ }
-          }
-        }
-      });
-
       Orientation.addOrientationListener(handleOrientationChange);
       Orientation.addDeviceOrientationListener(handleDeviceOrientationChange);
+
+      Orientation.getOrientation(orientation => {
+        if (!isActive) {
+          return;
+        }
+
+        const normalizedOrientation = normalizeUiOrientation(orientation);
+        if (normalizedOrientation) {
+          uiOrientationRef.current = normalizedOrientation;
+
+          if (isLandscapeOrientation(normalizedOrientation)) {
+            preferredLandscapeOrientationRef.current = normalizedOrientation;
+          }
+        }
+
+        Orientation.getDeviceOrientation(deviceOrientation => {
+          if (!isActive) {
+            return;
+          }
+
+          deviceOrientationRef.current = deviceOrientation;
+
+          Orientation.getAutoRotateState(state => {
+            if (!isActive) {
+              return;
+            }
+
+            const autoRotateEnabled = Boolean(state);
+            isAutoRotateEnabledRef.current = autoRotateEnabled;
+            const fallbackLandscape = normalizedOrientation && isLandscapeOrientation(normalizedOrientation)
+              ? normalizedOrientation
+              : preferredLandscapeOrientationRef.current;
+            const targetLandscape = getPreferredLandscapeOrientation(
+              deviceOrientation,
+              fallbackLandscape,
+            );
+
+            lockToLandscapeSide(targetLandscape, autoRotateEnabled);
+          });
+        });
+      });
 
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
         doSaveRef.current();
@@ -645,7 +760,16 @@ export default function WatchScreen() {
         Orientation.removeDeviceOrientationListener(handleDeviceOrientationChange);
         restoreAppOrientation();
       };
-    }, [handleDeviceOrientationChange, handleOrientationChange, navigation, restoreAppOrientation]),
+    }, [
+      clearPendingOrientation,
+      handleDeviceOrientationChange,
+      handleOrientationChange,
+      lockToLandscapeSide,
+      manualToggleLandscapeOrientation,
+      navigation,
+      playerPreferencesHydrated,
+      restoreAppOrientation,
+    ]),
   );
 
   useEffect(() => {
@@ -700,7 +824,6 @@ export default function WatchScreen() {
     if (singleTapTimeout.current) clearTimeout(singleTapTimeout.current);
     if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
     if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
-    if (manualOrientationTimerRef.current) clearTimeout(manualOrientationTimerRef.current);
     if (seekStableRemoteSaveTimerRef.current) clearTimeout(seekStableRemoteSaveTimerRef.current);
   }, [clearHideTimer, clearReadyForDisplayTimer]);
 
@@ -1241,49 +1364,66 @@ export default function WatchScreen() {
 
   const toggleOrientation = useCallback(() => {
     const nextOrientation: PlayerOrientation = isLandscape ? 'portrait' : 'landscape';
-    const preferredLandscapeOrientation = getPreferredLandscapeOrientation(
-      deviceOrientationRef.current,
-      lastLandscapeOrientationRef.current,
-    );
-
-    if (manualOrientationTimerRef.current) {
-      clearTimeout(manualOrientationTimerRef.current);
-      manualOrientationTimerRef.current = undefined;
-    }
-
-    manualOrientationLockRef.current = nextOrientation;
-    setManualOrientationLock(nextOrientation);
-    setCurrentOrientation(nextOrientation);
     setShowSpeed(false);
 
     if (nextOrientation === 'landscape') {
-      lastLandscapeOrientationRef.current = preferredLandscapeOrientation;
+      const targetLandscape = manualToggleLandscapeOrientation;
+      preferredLandscapeOrientationRef.current = targetLandscape;
 
-      try { Orientation.unlockAllOrientations(); } catch (_) { /* ignore */ }
-
-      if (preferredLandscapeOrientation === OrientationType['LANDSCAPE-LEFT']) {
-        try { Orientation.lockToLandscapeLeft(); } catch (_) { /* ignore */ }
-      } else {
-        try { Orientation.lockToLandscapeRight(); } catch (_) { /* ignore */ }
-      }
+      lockToLandscapeSide(targetLandscape, isAutoRotateEnabledRef.current);
     } else {
-      try { Orientation.lockToPortrait(); } catch (_) { /* ignore */ }
-    }
-
-    if (matchesManualOrientation(nextOrientation, deviceOrientationRef.current)) {
-      manualOrientationTimerRef.current = setTimeout(() => {
-        if (manualOrientationLockRef.current !== nextOrientation) {
-          return;
-        }
-
-        manualOrientationLockRef.current = null;
-        setManualOrientationLock(null);
-        try { Orientation.unlockAllOrientations(); } catch (_) { /* ignore */ }
-      }, 450);
+      preferredLandscapeOrientationRef.current = manualToggleLandscapeOrientation;
+      lockToPortraitMode();
     }
 
     revealControls();
-  }, [isLandscape, revealControls]);
+  }, [
+    isLandscape,
+    lockToLandscapeSide,
+    lockToPortraitMode,
+    manualToggleLandscapeOrientation,
+    revealControls,
+  ]);
+
+  const handlePictureInPictureStatusChanged = useCallback(
+    ({ isActive }: OnPictureInPictureStatusChangedData) => {
+      setIsPictureInPictureActive(previous => (
+        previous === isActive ? previous : isActive
+      ));
+
+      if (isActive) {
+        setShowControls(false);
+        setShowSpeed(false);
+        setShowEpDrawer(false);
+        setShowQualityModal(false);
+        clearHideTimer();
+        savePlaybackProgress({ forceRemote: true });
+        return;
+      }
+
+      revealControls();
+    },
+    [clearHideTimer, revealControls, savePlaybackProgress],
+  );
+
+  const handleEnterPictureInPicture = useCallback(() => {
+    if (!canUsePictureInPicture) {
+      Alert.alert(
+        'PiP chưa hỗ trợ',
+        'Thiết bị hoặc nguồn phát hiện tại chưa hỗ trợ Picture in Picture.',
+      );
+      return;
+    }
+
+    try {
+      videoRef.current?.enterPictureInPicture();
+    } catch {
+      Alert.alert(
+        'Không thể mở PiP',
+        'Flixtor chưa thể chuyển sang Picture in Picture trên thiết bị này.',
+      );
+    }
+  }, [canUsePictureInPicture]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -1423,13 +1563,18 @@ export default function WatchScreen() {
             videoSourceType={isEmbedPlayback ? 'embed' : videoSource.type}
             videoUri={videoUri}
             fallbackUri={videoSource.fallbackUri}
+            metadataImageUri={notificationArtworkUri}
+            metadataSubtitle={currentEp.name ?? movie.origin_name}
+            metadataTitle={movie.name}
             videoRef={videoRef}
+            enterPictureInPictureOnLeave={canUsePictureInPicture}
             isZoomed={isZoomed}
             playing={playing}
             muted={muted}
             speed={speed}
             progressUpdateInterval={progressUpdateIntervalMs}
             onLoad={onLoad}
+            onPictureInPictureStatusChanged={handlePictureInPictureStatusChanged}
             onReadyForDisplay={onReadyForDisplay}
             onProgress={onProgress}
             onBuffer={onBuffer}
@@ -1523,6 +1668,25 @@ export default function WatchScreen() {
                   <TouchableOpacity onPress={() => setIsZoomed(z => !z)} style={styles.secondaryControlButton} hitSlop={HIT}>
                     <Text style={styles.secondaryControlText}>{isZoomed ? 'Fit' : 'Fill'}</Text>
                   </TouchableOpacity>
+                  {canUsePictureInPicture && (
+                    <TouchableOpacity
+                      onPress={handleEnterPictureInPicture}
+                      style={[
+                        styles.secondaryControlButton,
+                        isPictureInPictureActive && styles.secondaryControlButtonActive,
+                      ]}
+                      hitSlop={HIT}
+                    >
+                      <Text
+                        style={[
+                          styles.secondaryControlTextStandalone,
+                          isPictureInPictureActive && styles.secondaryControlTextActive,
+                        ]}
+                      >
+                        PiP
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={toggleOrientation} style={styles.secondaryControlButton} hitSlop={HIT}>
                     <Icon icon='RefreshLight' color={Colors.white} />
                   </TouchableOpacity>
@@ -1737,11 +1901,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: Spacing.sm,
   },
+  secondaryControlButtonActive: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(229,9,20,0.18)',
+  },
   secondaryControlText: {
     color: Colors.white,
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.bold,
     marginLeft: Spacing.xs,
+  },
+  secondaryControlTextStandalone: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  secondaryControlTextActive: {
+    color: Colors.primaryLight,
   },
 
   centerRow: {
