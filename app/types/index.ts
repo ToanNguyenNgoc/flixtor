@@ -119,6 +119,71 @@ export interface VideoSource {
   fallbackUri?: string;
 }
 
+// ─── Offline Download Types ───────────────────────────────
+
+export type DownloadStatus =
+  | 'queued'
+  | 'downloading'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'waiting_for_network';
+
+export interface DownloadQualityOption {
+  label: string;
+  uri: string;
+  bandwidth?: number;
+  resolution?: number;
+  estimatedSizeBytes?: number;
+}
+
+export interface DownloadRequestPayload {
+  movieId?: string;
+  movieSlug: string;
+  episodeId?: string;
+  episodeSlug?: string;
+  title: string;
+  episodeTitle?: string;
+  posterUrl?: string;
+  backdropUrl?: string;
+  duration?: number;
+  sourceUrl: string;
+  serverName?: string;
+  quality?: DownloadQualityOption;
+}
+
+export interface DownloadItem {
+  id: string;
+  movieId?: string;
+  movieSlug: string;
+  episodeId?: string;
+  episodeSlug?: string;
+  title: string;
+  episodeTitle?: string;
+  posterUrl?: string;
+  backdropUrl?: string;
+  duration?: number;
+  quality: string;
+  qualityUri?: string;
+  qualityBandwidth?: number;
+  qualityResolution?: number;
+  sourceUrl: string;
+  sourceType: 'hls';
+  serverName?: string;
+  totalSegments: number;
+  downloadedSegments: number;
+  downloadProgress: number;
+  fileSize?: number;
+  status: DownloadStatus;
+  errorMessage?: string;
+  createdAt: number;
+  updatedAt: number;
+  localFolderPath?: string;
+  localPlaylistPath?: string;
+  downloadedAt?: number;
+}
+
 // ─── Favorite & History ────────────────────────────────────
 
 export interface FavoriteMovie {

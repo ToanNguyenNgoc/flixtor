@@ -46,7 +46,7 @@ function EmbedPlayer({ uri }: EmbedPlayerProps) {
 
 const styles = StyleSheet.create({
   webview: { flex: 1, backgroundColor: Colors.black },
-  loading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.black },
+  loading: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.black },
 });
 
 export default memo(EmbedPlayer);

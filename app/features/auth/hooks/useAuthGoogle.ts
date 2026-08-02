@@ -83,7 +83,7 @@ interface UseAuthGoogleResult {
 }
 
 export function useAuthGoogle(): UseAuthGoogleResult {
-  const navigation = useNavigation<NativeStackNavigationProp<AppRootStackParamList>>();
+  const navigation = useNavigation() as unknown as NativeStackNavigationProp<AppRootStackParamList>;
   const setAuthSession = useAuthStore(state => state.setAuthSession);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);

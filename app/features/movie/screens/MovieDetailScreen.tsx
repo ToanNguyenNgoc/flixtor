@@ -73,8 +73,8 @@ function extractYoutubeVideoId(url?: string): string | null {
 }
 
 export default function MovieDetailScreen() {
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<Route>();
+  const navigation = useNavigation() as unknown as Nav;
+  const route = useRoute() as unknown as Route;
   const { slug } = route.params;
   const { width } = useWindowDimensions();
 
@@ -339,7 +339,7 @@ export default function MovieDetailScreen() {
                   width={trailerWidth}
                   play={isTrailerPlaying}
                   videoId={trailerVideoId}
-                  onChangeState={(state) => {
+                  onChangeState={(state: string) => {
                     if (state === PLAYER_STATES.ENDED || state === PLAYER_STATES.PAUSED) {
                       setIsTrailerPlaying(false);
                     }
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
 
   // Backdrop
   backdrop: { height: 240, position: 'relative' },
-  backdropImage: { ...StyleSheet.absoluteFillObject },
+  backdropImage: { ...StyleSheet.absoluteFill },
   backdropGradient: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
 
   // Info

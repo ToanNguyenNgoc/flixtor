@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import FastImage, { type FastImageProps } from 'react-native-fast-image';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -12,6 +12,22 @@ interface CachedImageProps extends FastImageProps {
   showSkeleton?: boolean;
   /** Image URL to fall back to if the original fails to load */
   fallbackUrl?: string;
+}
+
+function getSourceUri(source?: FastImageProps['source']): string | null {
+  if (!source || typeof source === 'number' || !('uri' in source)) {
+    return null;
+  }
+
+  return typeof source.uri === 'string' ? source.uri : null;
+}
+
+function shouldUseNativeFallback(uri?: string | null): boolean {
+  if (!uri) {
+    return false;
+  }
+
+  return /\.webp($|\?)/i.test(uri.trim());
 }
 
 /**
@@ -32,6 +48,7 @@ export const CachedImage = React.memo(({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [useOriginalSource, setUseOriginalSource] = useState(false);
+  const [useNativeImageFallback, setUseNativeImageFallback] = useState(false);
 
   const sourceKey = useMemo(() => {
     if (typeof source === 'number') {
@@ -83,11 +100,25 @@ export const CachedImage = React.memo(({
     return { uri: fallbackUrl };
   }, [fallbackUrl, hasError, originalSource, source, useOriginalSource]);
 
+  const targetUri = useMemo(() => getSourceUri(targetSource), [targetSource]);
+  const shouldUseNativeImageFromSource = useMemo(
+    () => shouldUseNativeFallback(getSourceUri(source)),
+    [source],
+  );
+  const shouldUseFastImageFallback = useMemo(() => {
+    if (typeof targetSource === 'number') {
+      return false;
+    }
+
+    return useNativeImageFallback || shouldUseNativeFallback(targetUri);
+  }, [targetSource, targetUri, useNativeImageFallback]);
+
   useEffect(() => {
     setHasError(false);
     setUseOriginalSource(false);
     setIsLoading(true);
-  }, [sourceKey]);
+    setUseNativeImageFallback(shouldUseNativeImageFromSource);
+  }, [shouldUseNativeImageFromSource, sourceKey]);
 
   const targetSourceKey = `${sourceKey}:${useOriginalSource ? 'original' : hasError ? 'fallback' : 'primary'}`;
 
@@ -96,7 +127,8 @@ export const CachedImage = React.memo(({
       <FastImage
         key={targetSourceKey}
         source={targetSource}
-        style={StyleSheet.absoluteFillObject}
+        fallback={shouldUseFastImageFallback}
+        style={StyleSheet.absoluteFill}
         onLoadStart={() => {
           setIsLoading(true);
           onLoadStart?.();
@@ -106,12 +138,19 @@ export const CachedImage = React.memo(({
           onLoad?.(e);
         }}
         onError={() => {
+          if (!useNativeImageFallback && typeof targetSource !== 'number') {
+            setUseNativeImageFallback(true);
+            return;
+          }
+
           if (!useOriginalSource && originalSource) {
+            setUseNativeImageFallback(shouldUseNativeFallback(originalSource.uri));
             setUseOriginalSource(true);
             return;
           }
 
           if (!hasError) {
+            setUseNativeImageFallback(shouldUseNativeFallback(fallbackUrl));
             setHasError(true);
             return;
           }
@@ -138,7 +177,11 @@ const styles = StyleSheet.create({
     backgroundColor: muiColor.grey[900], // Fallback subtle background
   },
   skeleton: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: muiColor.grey[800],
   },
 });

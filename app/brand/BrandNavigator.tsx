@@ -1,8 +1,9 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import BrandScreen from './BrandScreen';
+import {
+  createNativeStackNavigator,
+  type NativeStackNavigationProp,
+} from '@react-navigation/native-stack';
 import { BrandBottomNavigator } from './navigator';
-import {StackNavigationProp} from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 
 interface BrandNavigatorProps {
@@ -24,20 +25,20 @@ export type BrandStackParamList = {
 };
 
 export type NavigateProps<T extends keyof BrandStackParamList> = {
-  navigation: StackNavigationProp<BrandStackParamList, T>;
+  navigation: NativeStackNavigationProp<BrandStackParamList, T>;
   route: RouteProp<BrandStackParamList, T>;
 };
 
-
 const Stack = createNativeStackNavigator<BrandStackParamList>();
 
-export function BrandNavigator({
-  redirectUrl,
-  isRefreshing = false,
-  onRetryPress,
-}: BrandNavigatorProps) {
+export function BrandNavigator(_props: BrandNavigatorProps) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        inactiveBehavior: 'none',
+      }}
+    >
       <Stack.Screen name='BrandBottomNavigator' component={BrandBottomNavigator} />
       {/* <Stack.Screen name="BrandHome">
         {() => (

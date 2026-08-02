@@ -12,7 +12,9 @@
 - **Bundle ID**: `com.myspa.flixtor`
 - **Entry point**: `index.js` → `App.tsx`
 - **Platform**: iOS + Android
-- **RN version**: 0.81.5 | React 19.1.0
+- **RN version**: 0.86.0 | React 19.2.3
+- **Navigation baseline**: React Navigation 8 alpha (`@react-navigation/native`, `bottom-tabs`, `native-stack` đều ở `8.0.0-alpha.30`)
+- **New Architecture**: enabled trên Android (`newArchEnabled=true`), Metro/Babel đã chuyển sang stack Reanimated 4 + Worklets
 
 ---
 
@@ -39,16 +41,30 @@ App.tsx (current bootstrap flow)
   │     ├── `status === true && blocked === true`  → render `BrandNavigator`
   │     ├── còn lại / lỗi / timeout / sai format   → fallback `RootNavigator`
   │     └── khi app resume từ background → re-check `system-status` một lần với cooldown
-  └── giữ `BootSplash` + `SplashScreen` tới khi bootstrap và lần check đầu hoàn tất
+  └── khi bootstrap + system-status xong mới `BootSplash.hide({ fade: true })`; app không còn render React Native splash overlay riêng trong lúc chờ
 
 Providers wrap order:
   GestureHandlerRootView
-    QueryClientProvider (staleTime: 2h, retry: 2)
+    QueryClientProvider (staleTime: 2 min, gcTime: 8 min, retry: 1, no refetchOnWindowFocus/reconnect)
       SafeAreaProvider
         StatusBar (light-content, translucent)
-          NavigationContainer (linking prefix: `flixtor://`)
+          NavigationContainer (linking prefix: `flixtor://`, custom dark theme wired to app design tokens)
             AppInitializer
               RootNavigator
+
+### Navigation / Platform upgrade notes
+
+- `babel.config.js` dùng `module:@react-native/babel-preset` và `react-native-worklets/plugin` làm plugin cuối để tương thích `react-native-reanimated@4`.
+- `metro.config.js` được bọc bằng `wrapWithReanimatedMetroConfig(...)` để Reanimated 4 hoạt động đúng cùng SVG transformer hiện có.
+- React Navigation 8 alpha hiện vẫn cần 3 patch-package patch nội bộ cho `@react-navigation/native` và nested `@react-navigation/elements`; patch files đã được regenerate đúng version hiện tại để `postinstall` sạch warning.
+- `MainNavigator` hiện dùng tab bar do app tự render riêng trên Android; iOS vẫn giữ implementation mặc định/native khi khả dụng. Mục tiêu là tránh regression tab press của `@react-navigation/bottom-tabs` alpha trên Android trong khi vẫn giữ icon SVG hiện tại.
+- `NavigationContainer` hiện truyền explicit dark theme theo `Colors.*` của app để native stack/tab transitions không fallback sang nền trắng mặc định của React Navigation trên iOS.
+- Android/iOS hiện dùng native `react-native-bootsplash` cho launch/loading đầu app; `BootSplash.hide({ fade: true })` chỉ chạy sau khi bootstrap và check system status xong, không còn overlay splash riêng ở layer React Native.
+- Android debug build mặc định chỉ đóng gói `arm64-v8a,x86_64` qua `reactNativeArchitectures` để APK dev bớt phình; có thể override từ CLI nếu cần ABI khác.
+- `@tanstack/react-query` đã lên v5, nên các query dùng `gcTime`/`initialPageParam` theo API mới.
+- Repo hiện typecheck sạch với baseline mới; `service.ts` được giữ lại như no-op placeholder vì `react-native-track-player` không còn nằm trong stack app và không còn được register ở `index.js`.
+- iOS hiện có patch-package `patches/react-native-view-shot+4.0.3.patch` để `react-native-view-shot` nhận đúng `RCTScrollViewComponentView` trên React Native 0.86 / New Architecture.
+- `ios/Podfile` đang ép `RNFBAnalytics`, `RNFBApp`, `RNFBAuth`, `RNFBMessaging` về `static_library` và nới `CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES` cho các target `RNFB*` để tránh lỗi module header khi build iOS với `use_frameworks! :linkage => :static`.
 ```
 
 ---
@@ -163,6 +179,7 @@ Hooks và stores không cần sửa.
 - `ProfileScreen` có 2 mode:
   - guest mode: hiện CTA `Đăng nhập tài khoản` và `Đăng ký tài khoản`
   - authenticated mode: hiện hồ sơ thật + refresh profile + logout
+- `ProfileScreen` hiện có thêm section local `Trình phát` để user đổi hướng xoay thủ công của player (`LEFT`/`RIGHT`, mặc định `LEFT`) và bật/tắt `Picture in Picture` (mặc định `ON`) mà không phụ thuộc trạng thái đăng nhập.
 - `RegisterScreen` dùng API thật, validate email/displayName/password/confirm password và tự đăng nhập ngay sau khi đăng ký thành công
 - `ForgotPasswordScreen` gửi `POST /api/auth/forgot-password` với `platform: 'MOBA'`, không tiết lộ email có tồn tại hay không
 - `ResetPasswordScreen` nhận `token` từ deeplink hoặc navigate nội bộ, gọi `POST /api/auth/reset-password` và đưa user về `Login` sau khi đổi mật khẩu thành công
@@ -213,13 +230,23 @@ Hooks và stores không cần sửa.
 - WatchScreen vẫn lưu continue-watching local vào `watchHistoryStore`; ngoài ra nếu user đã login thì sẽ queue/throttle `POST /api/user/history` ở các mốc định kỳ, pause, seek ổn định, back, background và end.
 - Landscape dùng immersive mode + ẩn status bar; video full-bleed sát hai cạnh màn hình để `Fill` cover trọn khung, còn top/bottom controls mới là phần tôn trọng safe-area và seek bar bám tuyệt đối ở mép dưới.
 - Portrait hiện theo chế độ player-only: video `contain` nằm giữa màn hình trên nền đen, chỉ giữ lại controls overlay và ẩn toàn bộ panel metadata/thao tác bên dưới.
+- `RootNavigator` mở `Watch` với `animation: 'none'` thay vì `fade` để tránh iOS native-stack giữ nhầm frame portrait khi đẩy sang màn landscape, làm player/video bị lệch khỏi khung nhìn.
+- Khi source `m3u8` trên iOS load được audio nhưng native player không render hình kịp, `WatchScreen` sẽ fallback sang `link_embed` sau timeout ngắn hoặc ngay khi native player báo lỗi, để user vẫn xem được video.
 - Có nút xoay thủ công trong player; nếu user xoay máy đúng với chiều đã chọn thủ công thì screen sẽ tự nhả lock để quay lại auto-rotate tự nhiên.
+- Nút xoay thủ công của `WatchScreen` hiện đọc setting từ `usePlayerPreferencesStore`: user có thể chọn cặp `portrait ↔ LANDSCAPE-LEFT` hoặc `portrait ↔ LANDSCAPE-RIGHT` ngay trong `ProfileScreen`; mặc định là `LEFT`.
+- Flow orientation của `WatchScreen` hiện khóa landscape bằng `lockToLandscapeLeft()` / `lockToLandscapeRight()` tường minh, không còn dùng `lockToLandscape()` chung chung; state được tách thành UI orientation thật + preferred landscape side + pending native transition để tránh event lệch nhịp ghi đè sai side.
+- Layout/fullscreen của `WatchScreen` hiện bám theo viewport thực (`window.width > window.height`) thay vì chỉ bám state orientation nội bộ; mục tiêu là tránh render landscape UI trong khi React Native viewport vẫn đang là portrait ở các nhịp native lock/unlock lệch nhau.
 - `WatchScreen` tối ưu render bằng cách memo hóa `PlayerMediaSurface`, `EpisodeDrawer`, `QualityDrawer`; nhờ đó native `Video`/`WebView` và các drawer nặng không phải re-render theo mọi nhịp progress.
 - Player dùng `progressUpdateInterval` động: khi controls đang hiện hoặc đang seek thì cập nhật nhanh hơn, còn khi controls ẩn sẽ giảm tần suất sync UI để bớt tải CPU/JS thread.
 - Controls overlay không còn phủ nền tối toàn màn hình; thay vào đó chỉ top/bottom bars giữ nền mờ để giảm GPU overdraw.
+- Với source native (`m3u8`), `WatchScreen` hiện bật `playInBackground`, `playWhenInactive` và `showNotificationControls`; riêng `enterPictureInPictureOnLeave` và nút `PiP` thủ công sẽ tôn trọng setting `Picture in Picture` trong `ProfileScreen`. Source `embed` thì không hỗ trợ các feature PiP này.
 - Controls auto-hide sau 3500ms
 - Seek ±10 giây
 - Progress được lưu vào `watchHistoryStore` để resume/history tiếp tục hoạt động khi đổi orientation hoặc back khỏi màn xem.
+
+### Native playback platform config
+- `ios/Flixtor/Info.plist` đã có `UIBackgroundModes` gồm `audio`, nên background playback của `react-native-video` hoạt động trên iOS khi `ignoreSilentSwitch="ignore"`.
+- `android/app/src/main/AndroidManifest.xml` hiện đã khai báo `android:supportsPictureInPicture="true"` cho `MainActivity`, thêm `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_MEDIA_PLAYBACK`, và register `com.brentvatne.exoplayer.VideoPlaybackService` để media session/notification controls của `react-native-video` hoạt động đúng khi xem nền.
 
 ### MovieCard
 - Variant: `poster` (2:3), `backdrop` (16:9), `topTen` (với rank number overlay)
@@ -227,9 +254,10 @@ Hooks và stores không cần sửa.
 - Series indicator badge (chữ "S" đỏ)
 
 ### Shared Image Pipeline
-- Helper ảnh trong `app/utils/image.ts` chuẩn hoá URL `phimimg.com` và đi qua proxy `https://phimapi.com/image.php?url=...` để lấy ảnh `.webp` tối ưu từ server KKPhim.
-- `prefetchImages()` vẫn dùng `FastImage.preload` cho cache client, nhưng preload URL proxy `.webp` thay vì URL gốc.
-- `CachedImage` có fallback 2 tầng: URL proxy `.webp` → URL gốc `phimimg.com` → placeholder.
+- Helper ảnh trong `app/utils/image.ts` chuẩn hoá URL `phimimg.com` và hiện trả trực tiếp URL gốc thay vì đi qua proxy `phimapi.com/image.php`, vì endpoint proxy không còn hoạt động ổn định.
+- `prefetchImages()` preload trực tiếp URL ảnh gốc đã normalize.
+- `CachedImage` giữ fallback từ URL chính hiện tại sang placeholder, đồng thời vẫn chấp nhận source URL đã được normalize sẵn.
+- `CachedImage` chủ động bật native `Image` fallback cho nguồn `.webp` và sẽ tự chuyển sang native fallback nếu `FastImage` báo lỗi decode/load, để poster remote vẫn hiện ổn định trên cả các máy kén định dạng/cache.
 
 ### HistoryScreen
 - Khi user đã đăng nhập, `HistoryScreen` gọi `GET /api/user/history?page=1&limit=20` qua React Query và hiển thị lịch sử xem dạng grid 2 cột.

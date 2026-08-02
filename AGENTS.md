@@ -18,7 +18,7 @@ App name trong `app.json`: `Flixtor`.
 
 | Layer | Technology |
 |---|---|
-| Framework | React Native CLI 0.81.5 |
+| Framework | React Native CLI 0.86.0 |
 | Language | TypeScript (strict) |
 | Navigation | React Navigation v7 (native-stack + bottom-tabs) |
 | State | Zustand ^5 |

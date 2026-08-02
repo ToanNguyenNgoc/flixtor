@@ -1,19 +1,37 @@
-// SplashScreen.tsx — Simplified (BootSplash now handled in App.tsx)
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { Colors, Typography } from '@/config/theme';
+import {
+  Image,
+  type LayoutChangeEvent,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { image } from '@/assets/image';
+import { Colors } from '@/config/theme';
 
-export default function SplashScreen() {
+interface SplashScreenProps {
+  onLayout?: (event: LayoutChangeEvent) => void;
+}
+
+export default function SplashScreen({ onLayout }: SplashScreenProps) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.logo}>FLIXTOR</Text>
-      <ActivityIndicator color={Colors.primary} size="large" style={styles.loader} />
+    <View style={styles.container} onLayout={onLayout}>
+      <Image
+        source={image.BootSplash}
+        resizeMode="cover"
+        style={styles.image}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' },
-  logo: { fontSize: 48, fontWeight: Typography.fontWeight.extrabold, color: Colors.primary, letterSpacing: 4 },
-  loader: { marginTop: 40 },
+  container: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: Colors.background,
+  },
+  image: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
 });

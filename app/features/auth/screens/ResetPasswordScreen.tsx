@@ -33,8 +33,8 @@ const PASSWORD_TOGGLE_HIT_SLOP = {
 
 export default function ResetPasswordScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const route = useRoute<RouteProp<RootStackParamList, 'ResetPassword'>>();
+  const navigation = useNavigation() as unknown as NativeStackNavigationProp<RootStackParamList>;
+  const route = useRoute() as unknown as RouteProp<RootStackParamList, 'ResetPassword'>;
   const {
     confirmPassword,
     errorMessage,

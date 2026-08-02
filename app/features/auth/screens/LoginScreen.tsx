@@ -42,7 +42,7 @@ const AUTH_ROUTE_NAMES = new Set<keyof RootStackParamList>([
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation() as unknown as NativeStackNavigationProp<RootStackParamList>;
   const {
     email,
     password,

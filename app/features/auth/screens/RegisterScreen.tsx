@@ -32,7 +32,7 @@ const PASSWORD_TOGGLE_HIT_SLOP = {
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation() as unknown as NativeStackNavigationProp<RootStackParamList>;
   const {
     confirmPassword,
     displayName,

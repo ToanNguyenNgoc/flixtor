@@ -2,11 +2,14 @@
  * Flixtor — Root App Component
  * Sets up all providers: QueryClient, GestureHandler, SafeArea, Navigation
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme as NavigationDarkTheme,
+  NavigationContainer,
+} from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BootSplash from 'react-native-bootsplash';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -18,12 +21,24 @@ import { useAuthStore } from '@/features/auth/store/authStore';
 import { initializeApiServer } from '@/services/api/axiosClient';
 import { BrandNavigator } from '@/brand';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
-import HomeScreenSkeleton from '@/features/home/components/HomeScreenSkeleton';
 import { navigationRef } from '@/brand/navigator/brand.navigate';
+import { Colors } from '@/config/theme';
 
 const rootStyle = StyleSheet.create({ root: { flex: 1 } }).root;
 const QUERY_STALE_TIME = 1000 * 60 * 2;
 const QUERY_CACHE_TIME = 1000 * 60 * 8;
+const navigationTheme = {
+  ...NavigationDarkTheme,
+  colors: {
+    ...NavigationDarkTheme.colors,
+    primary: Colors.primary,
+    background: Colors.background,
+    card: Colors.background,
+    text: Colors.text,
+    border: Colors.border,
+    notification: Colors.primaryLight,
+  },
+} as const;
 
 function shouldRetryQuery(failureCount: number, error: unknown) {
   if (
@@ -44,7 +59,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       staleTime: QUERY_STALE_TIME,
-      cacheTime: QUERY_CACHE_TIME,
+      gcTime: QUERY_CACHE_TIME,
       retry: shouldRetryQuery,
     },
   },
@@ -55,6 +70,7 @@ export default function App() {
   const loadHistory = useWatchHistoryStore(state => state.loadHistory);
   const restoreSession = useAuthStore(state => state.restoreSession);
   const [isAppReady, setIsAppReady] = useState(false);
+  const hasHiddenNativeSplashRef = useRef(false);
   const {
     isCheckingSystemStatus,
     isBlocked,
@@ -80,12 +96,25 @@ export default function App() {
   useEffect(() => {
     bootstrapApp().finally(() => {
       setIsAppReady(true);
-      BootSplash.hide({ fade: true });
     });
   }, [bootstrapApp]);
 
   const shouldShowLoading = !isAppReady || (isCheckingSystemStatus && !isBlocked);
   const activeLinking = isBlocked ? undefined : linking;
+  const hideNativeSplash = useCallback(() => {
+    if (hasHiddenNativeSplashRef.current) {
+      return;
+    }
+
+    hasHiddenNativeSplashRef.current = true;
+    BootSplash.hide({ fade: true });
+  }, []);
+
+  useEffect(() => {
+    if (!shouldShowLoading) {
+      hideNativeSplash();
+    }
+  }, [hideNativeSplash, shouldShowLoading]);
 
   return (
     <GestureHandlerRootView style={rootStyle}>
@@ -93,8 +122,11 @@ export default function App() {
         <SafeAreaProvider>
           <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
           <BottomSheetModalProvider>
-            <NavigationContainer linking={activeLinking} ref={navigationRef}>
-              {shouldShowLoading ? <HomeScreenSkeleton topInset={140} /> : null}
+            <NavigationContainer
+              linking={activeLinking}
+              ref={navigationRef}
+              theme={navigationTheme}
+            >
               {!shouldShowLoading && isBlocked ? (
                 <BrandNavigator
                   isRefreshing={isCheckingSystemStatus}

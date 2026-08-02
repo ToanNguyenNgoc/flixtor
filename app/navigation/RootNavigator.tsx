@@ -15,7 +15,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        inactiveBehavior: 'none',
+      }}
+    >
       <Stack.Screen
         name="RootTabs"
         component={MainNavigator}
@@ -63,7 +68,11 @@ export default function RootNavigator() {
         component={WatchScreen}
         options={{
           headerShown: false,
-          animation: 'fade',
+          // iOS native-stack can keep the previous portrait frame during a
+          // fade transition into a landscape-only screen, which breaks the
+          // player layout. Disable the transition so the screen mounts with
+          // the correct bounds immediately.
+          animation: 'none',
           autoHideHomeIndicator: true,
         }}
       />

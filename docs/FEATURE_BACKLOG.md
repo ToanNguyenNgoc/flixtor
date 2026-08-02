@@ -21,6 +21,7 @@
 
 ## Proposed Features
 
+<<<<<<< HEAD
 ### Session Expiry Notice UX
 - **Status**: proposed
 - **Nguồn**: refresh-token flow follow-up (2026-07-30)
@@ -75,6 +76,216 @@
 - **Nguồn**: android bootsplash fullscreen fix follow-up (2026-07-22)
 - **Mô tả**: Tạo launch skeleton trong React Native khớp với splash branding để khi bootstrap dữ liệu lâu, người dùng vẫn thấy màn chờ đồng bộ với visual của native splash thay vì chuyển đột ngột sang loading UI khác.
 - **Files dự kiến**: `App.tsx`, `app/features/auth/screens/SplashScreen.tsx`, `app/config/theme.ts`
+=======
+### Player Background Playback Toggle
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm player preferences cho hướng xoay và PiP trong `ProfileScreen` (2026-08-02)
+- **Mô tả**: Tách riêng một toggle cho background playback/notification controls, vì hiện tại user mới chỉ bật/tắt được PiP chứ chưa kiểm soát phát nền.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/features/profile/screens/ProfileScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`
+- **Priority**: medium
+
+### Per-Profile Player Preferences
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm player preferences global trong `ProfileScreen` (2026-08-02)
+- **Mô tả**: Nếu sau này app có nhiều hồ sơ dùng chung trên một thiết bị, có thể lưu riêng hướng xoay/PiP theo từng profile thay vì dùng chung toàn app.
+- **Files dự kiến**: `app/features/profile/screens/ProfileScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`, có thể thêm storage key/profile linkage
+- **Priority**: medium
+
+### Player Preferences Reset Shortcut
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm section `Trình phát` trong `ProfileScreen` (2026-08-02)
+- **Mô tả**: Thêm nút reset nhanh để đưa player settings về mặc định `LEFT + PiP ON`, giúp QA và user đổi qua lại nhanh hơn khi test.
+- **Files dự kiến**: `app/features/profile/screens/ProfileScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`
+- **Priority**: low
+
+### PiP Return-To-Player Polish
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm PiP thủ công và auto-enter on leave (2026-08-02)
+- **Mô tả**: Tinh chỉnh UX khi user chạm vào cửa sổ PiP để quay lại app, đảm bảo orientation, immersive mode và control state được khôi phục mượt hơn.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, có thể thêm util/system UI liên quan
+- **Priority**: medium
+
+### Orientation State Cleanup In WatchScreen
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa nút xoay nhớ sai landscape side (2026-08-02)
+- **Mô tả**: Rà lại toàn bộ state/ref orientation trong `WatchScreen` để gom logic manual lock, device auto-rotate và remembered landscape side vào một module/hook dễ bảo trì hơn.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, có thể thêm hook mới trong `app/features/player/hooks/*`
+- **Priority**: medium
+
+### Playback Notification Metadata Enrichment
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi gắn title/subtitle/artwork cho notification controls (2026-08-02)
+- **Mô tả**: Làm giàu metadata phát nền bằng poster/backdrop tối ưu hơn, episode label nhất quán hơn và fallback artwork tốt hơn khi API thiếu ảnh.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/utils/image.ts`
+- **Priority**: low
+
+### iOS Liquid Glass Tab Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `MainNavigator` iOS bị nháy trắng khi đổi tab (2026-08-02)
+- **Mô tả**: Thêm checklist hoặc flow test ngắn để verify tab switch trên iPhone có/không có `isLiquidGlassSupported`, bao gồm các case Home ↔ Search, keyboard mở ở Search và resume app từ background.
+- **Files dự kiến**: `docs/*`, có thể thêm Maestro/Detox flow nếu team muốn
+- **Priority**: medium
+
+### Shared Navigation Theme Module
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi gắn explicit dark theme cho `NavigationContainer` (2026-08-02)
+- **Mô tả**: Tách navigation theme ra module riêng để stack, tabs, deep link shell và các test snapshot cùng dùng chung một nguồn token thay vì định nghĩa trực tiếp trong `App.tsx`.
+- **Files dự kiến**: `App.tsx`, có thể thêm `app/navigation/theme.ts`
+- **Priority**: low
+
+### iOS Native Tab Appearance Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi override tab bar transparency cho Liquid Glass (2026-08-02)
+- **Mô tả**: Rà lại `tabBarBlurEffect`, shadow và selected/unselected appearance trên các bản iOS mới để tinh chỉnh glass look nhất quán hơn với visual direction của app.
+- **Files dự kiến**: `app/navigation/MainNavigator.tsx`
+- **Priority**: medium
+
+### ABI Matrix Build Presets
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi giảm `reactNativeArchitectures` để fix `installDebug` trên emulator (2026-08-01)
+- **Mô tả**: Thêm preset/script rõ ràng cho từng môi trường dev như `arm64-v8a` (Apple Silicon emulator/device), `x86_64` (Intel emulator) và full ABI matrix khi cần QA rộng hơn.
+- **Files dự kiến**: `android/gradle.properties`, `package.json`, có thể thêm script docs
+- **Priority**: medium
+
+### Android Debug APK Size Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi phát hiện APK debug ~325MB trước khi giảm ABI (2026-08-01)
+- **Mô tả**: Rà module native, packaging và symbols để biết phần nào đang làm APK debug phình mạnh, từ đó cân nhắc thêm split hoặc tối ưu build dev.
+- **Files dự kiến**: `android/app/build.gradle`, `android/gradle.properties`, dependencies native liên quan
+- **Priority**: medium
+
+### Emulator Storage Guardrail
+- **Status**: proposed
+- **Nguồn**: follow-up sau lỗi `INSTALL_FAILED_INSUFFICIENT_STORAGE` trên AVD (2026-08-01)
+- **Mô tả**: Thêm checklist hoặc script kiểm tra nhanh dung lượng `/data` trước khi `installDebug`, để báo sớm khi emulator sắp đầy thay vì chờ fail ở cuối build.
+- **Files dự kiến**: `package.json`, `docs/*`, có thể thêm script shell nhỏ
+- **Priority**: low
+
+### BootSplash Asset Pipeline Cleanup
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi phát hiện `drawable/bootsplash_logo.png` full-screen không phải resource Android thực sự được ưu tiên (2026-08-01)
+- **Mô tả**: Rà và đặt lại tên/nguồn gốc các file splash Android để tránh nhầm giữa logo vuông theo density và artwork full-screen dùng trong React Native overlay.
+- **Files dự kiến**: `android/app/src/main/res/drawable*/*`, `app/assets/image/bootsplash.png`
+- **Priority**: medium
+
+### Native BootSplash Startup Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi bỏ overlay loading/splash React Native ở `App.tsx` (2026-08-02)
+- **Mô tả**: Thêm checklist hoặc flow test quay màn hình khi cold start để chắc native `BootSplash` tự nó không còn nháy trắng và biến mất đúng lúc sau bootstrap/system-status.
+- **Files dự kiến**: `docs/*`, có thể thêm flow test nếu team muốn
+- **Priority**: low
+
+### Android Tab Press Regression Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `MainNavigator` Android không chuyển tab (2026-08-01)
+- **Mô tả**: Thêm checklist hoặc test E2E tối thiểu cho việc chạm từng tab trong `MainNavigator`, đặc biệt sau mỗi lần nâng `@react-navigation/*` alpha.
+- **Files dự kiến**: `docs/*`, có thể thêm detox/maestro flow nếu team muốn
+- **Priority**: medium
+
+### Shared Tab Config Extraction
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm Android custom tab bar vào `MainNavigator` (2026-08-01)
+- **Mô tả**: Tách cấu hình tab label/icon/sf-symbol sang module riêng để iOS native tabs và Android custom tabs dùng chung một nguồn, giảm drift khi đổi icon hoặc thêm tab mới.
+- **Files dự kiến**: `app/navigation/MainNavigator.tsx`, có thể thêm `app/navigation/tabConfig.ts`
+- **Priority**: low
+
+### Navigation Package Upgrade Validation
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi workaround `bottom-tabs` alpha trên Android (2026-08-01)
+- **Mô tả**: Khi React Navigation có bản alpha/beta mới hơn, rà lại xem lỗi tab press đã hết chưa để cân nhắc quay lại implementation mặc định và bớt code workaround.
+- **Files dự kiến**: `package.json`, `package-lock.json`, `app/navigation/MainNavigator.tsx`
+- **Priority**: medium
+
+### Shared Absolute Fill Style Helper Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thay toàn bộ `StyleSheet.absoluteFillObject` (2026-08-01)
+- **Mô tả**: Rà các style absolute lặp lại trong app và cân nhắc gom thành helper/style token dùng chung để giảm việc phải sửa tay nhiều file khi RN typings đổi lần nữa.
+- **Files dự kiến**: `app/config/theme.ts`, `app/components/*`, `app/features/*`
+- **Priority**: low
+
+### Watch Screen ESLint Cleanup
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi chạy lint cho nhóm file sửa `absoluteFillObject` (2026-08-01)
+- **Mô tả**: Dọn các warning/error cũ trong `WatchScreen.tsx` như `no-shadow` và `_ is defined but never used` để nhóm file player về trạng thái lint sạch.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`
+- **Priority**: medium
+
+### Overlay Layout Snapshot Check
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi đổi absolute overlay constants (2026-08-01)
+- **Mô tả**: Thêm checklist hoặc test snapshot nhẹ cho các màn có overlay toàn màn hình như hero, detail backdrop và watch drawer để bắt sớm regression layout khi nâng RN tiếp.
+- **Files dự kiến**: `docs/*`, có thể thêm test file nếu team muốn
+- **Priority**: low
+
+### Cached Image Failure Telemetry
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `CachedImage` không hiển thị poster `.webp` (2026-08-01)
+- **Mô tả**: Ghi nhận số lần `CachedImage` phải chuyển từ `FastImage` sang native fallback hoặc placeholder để biết domain/định dạng nào đang gây lỗi nhiều nhất trên thiết bị thật.
+- **Files dự kiến**: `app/components/common/CachedImage.tsx`, `services/analytics/*`
+- **Priority**: medium
+
+### Poster Placeholder With Dominant Color
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi ổn định pipeline ảnh remote (2026-08-01)
+- **Mô tả**: Thay skeleton/phẳng nền hiện tại bằng placeholder lấy dominant color hoặc gradient từ poster để giảm cảm giác flash khi ảnh tải chậm.
+- **Files dự kiến**: `app/components/common/CachedImage.tsx`, `app/utils/imageCache.ts`
+- **Priority**: medium
+
+### Shared Poster Retry Prefetch
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm native fallback cho `CachedImage` (2026-08-01)
+- **Mô tả**: Khi một poster từng lỗi nhưng tải lại thành công ở native fallback, prefetch lại URL đó theo batch nhẹ để các màn Home/Search/Detail sau đó ít phải decode lại hơn.
+- **Files dự kiến**: `app/components/common/CachedImage.tsx`, `app/utils/imageCache.ts`
+- **Priority**: low
+
+### React Native 0.86 Native Build Validation
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
+- **Mô tả**: Chạy lại luồng cài native deps và build smoke test trên iOS/Android để bắt sớm các thay đổi Pod, Gradle hoặc compile SDK do RN 0.86 mang theo.
+- **Files dự kiến**: `ios/Podfile.lock`, `android/build.gradle`, `android/gradle.properties`
+- **Priority**: high
+
+### React Native 0.86 Dependency Compatibility Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
+- **Mô tả**: Rà lại các thư viện native nhạy cảm như Reanimated, Gesture Handler, Firebase, Video, Mapbox để xác nhận peer dependency và changelog đều an toàn với baseline mới.
+- **Files dự kiến**: `package.json`, `package-lock.json`
+- **Priority**: high
+
+### React Native Firebase iOS Build Cleanup
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa blocker iOS build trên RN 0.86.0 (2026-07-05)
+- **Mô tả**: Kiểm tra xem project có thể bỏ bớt workaround Podfile cho `RNFB*` sau khi nâng version Firebase packages hoặc đổi cấu hình build, để giảm rủi ro native config drift về sau.
+- **Files dự kiến**: `ios/Podfile`, `package.json`, `package-lock.json`
+- **Priority**: medium
+
+### react-native-view-shot Usage Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm patch-package cho iOS build (2026-07-05)
+- **Mô tả**: Rà lại xem app còn dùng `react-native-view-shot` ở đâu; nếu không còn use case thực tế thì có thể gỡ dependency và xoá patch native để giảm bề mặt bảo trì.
+- **Files dự kiến**: `package.json`, `patches/react-native-view-shot+4.0.3.patch`, các màn hình/chức năng liên quan nếu còn dùng
+- **Priority**: medium
+
+### Watch Screen Orientation Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa layout player bị lệch khung trên iOS (2026-07-05)
+- **Mô tả**: Bổ sung checklist/manual smoke test cho luồng vào `Watch`, xoay portrait/landscape, back ra `MovieDetail` và chuyển tập/chất lượng để bắt sớm các lỗi frame/orientation.
+- **Files dự kiến**: `docs/*`, có thể thêm script/test helper nếu team muốn tự động hóa
+- **Priority**: medium
+
+### iOS Video Renderer Audit
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm fallback embed cho player iOS (2026-07-05)
+- **Mô tả**: Rà lại tương thích giữa `react-native-video`, Fabric/New Architecture và stream HLS hiện tại để xác định có thể quay lại native player 100% hay cần giữ fallback lâu dài.
+- **Files dự kiến**: `package.json`, `ios/Podfile.lock`, `app/features/player/screens/WatchScreen.tsx`
+- **Priority**: high
+
+### Upgrade CI Smoke Checks
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi nâng React Native lên 0.86.0 (2026-07-05)
+- **Mô tả**: Bổ sung job CI tối thiểu cho `npm install`, lint và native bootstrap để những lần đổi RN tiếp theo có tín hiệu lỗi sớm hơn.
+- **Files dự kiến**: `.github/workflows/*`, `package.json`
+>>>>>>> dev.update
 - **Priority**: medium
 
 ### Genre Filter / Browse by Category Screen
@@ -279,6 +490,48 @@
 - **Mô tả**: Khi người dùng đã có kết quả search, cho thanh search thu gọn nhẹ khi cuộn xuống để nhường nhiều không gian hơn cho grid kết quả.
 - **Files dự kiến**: `app/features/search/screens/SearchScreen.tsx`
 - **Priority**: low
+
+### React Navigation 8 Stable Upgrade Pass
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-06-21)
+- **Mô tả**: Khi React Navigation 8 ra stable, chạy thêm một vòng nâng từ alpha lên stable để bỏ dependency prerelease, rà lại breaking changes mới và cập nhật các peer dependency theo bản chính thức.
+- **Files dự kiến**: `package.json`, `package-lock.json`, `app/navigation/*`
+- **Priority**: high
+
+### Native Bottom Tabs Evaluation
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-06-21)
+- **Mô tả**: Đánh giá việc chuyển từ `implementation="custom"` sang native bottom tabs mặc định của 8.x để tận dụng performance và hành vi platform-native, kèm audit lại icon, label và header behavior.
+- **Files dự kiến**: `app/navigation/MainNavigator.tsx`, `app/brand/navigator/BrandBottomNavigator.tsx`
+- **Priority**: medium
+
+### Shared Typed Navigation Helpers
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-06-21)
+- **Mô tả**: Tạo các helper/hook typed navigation dùng chung để gom pattern `useNavigation() as ...` và `useRoute() as ...`, giúp screen code gọn hơn và giảm lặp cast thủ công.
+- **Files dự kiến**: `app/navigation/types.ts`, `app/navigation/hooks.ts`, các screen đang dùng navigation hooks
+- **Priority**: medium
+
+### React Navigation Alpha Dependency Alignment
+- **Status**: proposed
+- **Nguồn**: react-navigation runtime fix follow-up (2026-06-21)
+- **Mô tả**: Rà lại bộ version `react`, `react-native`, `react-native-screens` và các transitive alpha của React Navigation để giảm số patch tạm thời cho `ActivityView` và các API Fabric/new React còn lệch phiên bản.
+- **Files dự kiến**: `package.json`, `package-lock.json`, `patches/`, có thể thêm ghi chú vào `docs/`
+- **Priority**: high
+
+### React 19 Peer Compatibility Cleanup
+- **Status**: proposed
+- **Nguồn**: dependency audit follow-up (2026-06-21)
+- **Mô tả**: Nâng hoặc thay thế các package còn peer mismatch với `react@19.1.0`, ưu tiên `@tanstack/react-query` và `react-native-fast-image`, để `npm ls` sạch hơn và giảm rủi ro runtime âm thầm.
+- **Files dự kiến**: `package.json`, `package-lock.json`, các screen/hook dùng React Query hoặc image wrapper nếu cần chỉnh API
+- **Priority**: high
+
+### Brand Navigator Liquid Glass Parity
+- **Status**: proposed
+- **Nguồn**: MainNavigator liquid glass follow-up (2026-06-21)
+- **Mô tả**: Áp dụng visual treatment tương tự cho `BrandBottomNavigator` để hai nhánh điều hướng chính có trải nghiệm tab bar nhất quán trên iOS.
+- **Files dự kiến**: `app/brand/navigator/BrandBottomNavigator.tsx`, có thể cần theme token bổ sung nếu muốn tách màu brand riêng
+- **Priority**: medium
 
 ### Voice Search Entry Point
 - **Status**: proposed
@@ -902,3 +1155,38 @@
 - **Mô tả**: Cho phép cấu hình cooldown re-check khi app resume từ remote config hoặc env để team vận hành cân bằng giữa độ phản ứng và số lượng request.
 - **Files dự kiến**: `app/hooks/useSystemStatus.ts`, `app/config/env.ts`, có thể thêm remote config layer sau này
 - **Priority**: low
+
+### iOS Smoke Build Command
+- **Status**: proposed
+- **Nguồn**: iOS build fix follow-up (2026-06-21)
+- **Mô tả**: Thêm một lệnh build simulator tối thiểu cho iOS để phát hiện sớm lỗi native compile sau khi nâng dependency như React Navigation hoặc React Native libraries.
+- **Files dự kiến**: `package.json`, có thể thêm `docs/` hoặc CI config liên quan
+- **Priority**: medium
+
+### Navigation Runtime Smoke Test
+- **Status**: proposed
+- **Nguồn**: react-navigation runtime fix follow-up (2026-06-21)
+- **Mô tả**: Tạo một bước smoke test cho luồng mount `RootNavigator`, chuyển tab và push `native-stack` để phát hiện sớm các lỗi runtime kiểu `ActivityView` sau mỗi lần nâng dependency navigation hoặc React Native.
+- **Files dự kiến**: `docs/`, có thể thêm `package.json` hoặc e2e test setup nếu repo bổ sung automation
+- **Priority**: medium
+
+### Android Build Tools Cleanup For RN 0.83
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-07-05)
+- **Mô tả**: Gỡ `buildToolsVersion '33.0.0'` và rà lại compile/target SDK overrides để Android build không còn warning khi dùng AGP 8.12 / RN 0.83.
+- **Files dự kiến**: `android/build.gradle`, `android/app/build.gradle`
+- **Priority**: medium
+
+### RNMapbox Compatibility Audit On RN 0.83
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-07-05)
+- **Mô tả**: Kiểm tra riêng `@rnmapbox/maps` trên baseline RN 0.83 vì Android build hiện vẫn phát ra nhiều warning Kotlin/deprecation từ module này; mục tiêu là biết có cần bump version hoặc patch thêm không.
+- **Files dự kiến**: `package.json`, `android/`, có thể thêm `patches/`
+- **Priority**: medium
+
+### Native Smoke Build Script Matrix
+- **Status**: proposed
+- **Nguồn**: react-navigation 8 alpha upgrade follow-up (2026-07-05)
+- **Mô tả**: Thêm bộ lệnh smoke build tối thiểu cho Android debug và iOS simulator để mỗi lần nâng React Native/Navigation có thể verify native compile nhanh, thay vì chỉ dựa vào `npm install`.
+- **Files dự kiến**: `package.json`, `docs/`, có thể thêm CI config
+- **Priority**: high

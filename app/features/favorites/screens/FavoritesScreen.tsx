@@ -19,7 +19,7 @@ const Separator = () => <View style={sepStyle} />;
 const sepStyle = { height: Spacing.sm };
 
 export default function FavoritesScreen() {
-  const navigation = useNavigation<Nav>();
+  const navigation = useNavigation() as unknown as Nav;
   const insets = useSafeAreaInsets();
   const { favorites, loadFavorites, removeFavorite } = useFavoriteStore();
 

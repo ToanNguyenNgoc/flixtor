@@ -18,6 +18,7 @@ export const StorageKeys = {
   DOWNLOAD_QUEUE: '@flixtor/download_queue',
   APP_SETTINGS: '@flixtor/app_settings',
   SEARCH_HISTORY: '@flixtor/search_history',
+  PLAYER_PREFERENCES: '@flixtor/player_preferences',
 } as const;
 
 type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

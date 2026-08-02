@@ -1,0 +1,67 @@
+diff --git a/node_modules/react-native-view-shot/ios/RNViewShot.mm b/node_modules/react-native-view-shot/ios/RNViewShot.mm
+index 2cf632f..c452ff4 100644
+--- a/node_modules/react-native-view-shot/ios/RNViewShot.mm
++++ b/node_modules/react-native-view-shot/ios/RNViewShot.mm
+@@ -4,12 +4,17 @@
+ #import <React/UIView+React.h>
+ #import <React/RCTUtils.h>
+ #import <React/RCTConvert.h>
+-#import <React/RCTScrollView.h>
+ #import <React/RCTUIManager.h>
+ #if __has_include(<React/RCTUIManagerUtils.h>)
+ #import <React/RCTUIManagerUtils.h>
+ #endif
+ #import <React/RCTBridge.h>
++#if __has_include(<React/RCTScrollViewComponentView.h>)
++#import <React/RCTScrollViewComponentView.h>
++#endif
++#if __has_include(<React/RCTScrollView.h>)
++#import <React/RCTScrollView.h>
++#endif
+ 
+ #ifdef RCT_NEW_ARCH_ENABLED
+ #import <rnviewshot/rnviewshot.h>
+@@ -80,12 +85,41 @@ - (dispatch_queue_t)methodQueue
+     UIView* rendered;
+     UIScrollView* scrollView;
+     if (snapshotContentContainer) {
++#if defined(RCT_NEW_ARCH_ENABLED) && __has_include(<React/RCTScrollViewComponentView.h>)
++      if ([view isKindOfClass:[RCTScrollViewComponentView class]]) {
++        RCTScrollViewComponentView *rctScrollView = (RCTScrollViewComponentView *)view;
++        scrollView = rctScrollView.scrollView;
++      }
++#if !defined(RCT_REMOVE_LEGACY_ARCH) && __has_include(<React/RCTScrollView.h>)
++      else if ([view isKindOfClass:[RCTScrollView class]]) {
++        RCTScrollView *rctScrollView = (RCTScrollView *)view;
++        scrollView = rctScrollView.scrollView;
++      }
++#endif
++      else {
++        reject(
++            RCTErrorUnspecified,
++            [NSString stringWithFormat:@"snapshotContentContainer can only be used on a React Native scroll view. instead got: %@", view],
++            nil);
++        return;
++      }
++#elif !defined(RCT_REMOVE_LEGACY_ARCH) && __has_include(<React/RCTScrollView.h>)
+       if (![view isKindOfClass:[RCTScrollView class]]) {
+-        reject(RCTErrorUnspecified, [NSString stringWithFormat:@"snapshotContentContainer can only be used on a RCTScrollView. instead got: %@", view], nil);
++        reject(
++            RCTErrorUnspecified,
++            [NSString stringWithFormat:@"snapshotContentContainer can only be used on a React Native scroll view. instead got: %@", view],
++            nil);
+         return;
+       }
+-      RCTScrollView* rctScrollView = view;
++      RCTScrollView *rctScrollView = (RCTScrollView *)view;
+       scrollView = rctScrollView.scrollView;
++#else
++      reject(
++          RCTErrorUnspecified,
++          @"snapshotContentContainer is not supported because no compatible React Native scroll view implementation is available.",
++          nil);
++      return;
++#endif
+       rendered = scrollView;
+     }
+     else {

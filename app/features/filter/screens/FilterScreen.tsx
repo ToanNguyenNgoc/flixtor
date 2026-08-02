@@ -17,6 +17,7 @@ import FilterBottomSheet from '../components/FilterBottomSheet';
 import { MOVIE_TYPE_LIST } from '@/services/api/endpoints';
 import { Icon } from '@/components/common';
 import { muiColor } from '@/themes';
+import FastImage from 'react-native-fast-image';
 
 type Route = RouteProp<MainTabParamList, 'Filter'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -64,8 +65,8 @@ function createFilterState(params?: MainTabParamList['Filter']): FilterState {
 }
 
 export default function FilterScreen() {
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<Route>();
+  const navigation = useNavigation() as unknown as Nav;
+  const route = useRoute() as unknown as Route;
   const insets = useSafeAreaInsets();
   const routeCategory = route.params?.category;
   const routeCountry = route.params?.country;
