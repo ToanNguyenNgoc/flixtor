@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from 'react-native';
@@ -14,10 +14,10 @@ import { useCountries } from '../hooks/useCountries';
 import MovieGrid from '@/components/movie/MovieGrid';
 import MovieGridSkeleton from '@/components/movie/MovieGridSkeleton';
 import FilterBottomSheet from '../components/FilterBottomSheet';
+import type { FilterBottomSheetHandle } from '../components/FilterBottomSheet';
 import { MOVIE_TYPE_LIST } from '@/services/api/endpoints';
 import { Icon } from '@/components/common';
 import { muiColor } from '@/themes';
-import FastImage from 'react-native-fast-image';
 
 type Route = RouteProp<MainTabParamList, 'Filter'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -85,8 +85,8 @@ export default function FilterScreen() {
     requestId: routeRequestId,
   }), [routeCategory, routeCountry, routeLang, routeRequestId, routeSort, routeType, routeYear]);
   const hasRouteParams = route.params != null;
+  const filterBottomSheetRef = useRef<FilterBottomSheetHandle>(null);
   const [filter, setFilter] = useState<FilterState>(routeFilterState);
-  const [showSheet, setShowSheet] = useState(false);
 
   useEffect(() => {
     if (!hasRouteParams) {
@@ -137,7 +137,7 @@ export default function FilterScreen() {
   }, [navigation]);
 
   const handleOpenSheet = useCallback(() => {
-    setShowSheet(true);
+    filterBottomSheetRef.current?.open();
   }, []);
 
   const handleTypeSelect = useCallback((typeList: string) => {
@@ -152,7 +152,6 @@ export default function FilterScreen() {
 
   const handleApplyFilter = useCallback((newFilter: FilterState) => {
     setFilter(prev => ({ ...prev, ...newFilter }));
-    setShowSheet(false);
   }, []);
 
   const currentLabel = TYPE_LIST_OPTIONS.find(t => t.value === filter.typeList)?.label ?? 'Phim';
@@ -202,40 +201,33 @@ export default function FilterScreen() {
     </View>
   ), [activeFilters, filter.typeList, handleOpenSheet, handleTypeSelect]);
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {ListHeader}
-        <MovieGridSkeleton rows={4} />
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }, styles.center]}>
-        {ListHeader}
-        <Text style={styles.errorText}>⚠️ Lỗi tải dữ liệu</Text>
-        <TouchableOpacity onPress={() => refetch()} style={styles.retryBtn}>
-          <Text style={styles.retryText}>Thử lại</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <MovieGrid
-        movies={movies}
-        onMoviePress={handleMoviePress}
-        onEndReached={handleEndReached}
-        isLoadingMore={isFetchingNextPage}
-        ListHeaderComponent={ListHeader}
-      />
+      {isLoading ? (
+        <>
+          {ListHeader}
+          <MovieGridSkeleton rows={4} />
+        </>
+      ) : isError ? (
+        <View style={styles.center}>
+          {ListHeader}
+          <Text style={styles.errorText}>⚠️ Lỗi tải dữ liệu</Text>
+          <TouchableOpacity onPress={() => refetch()} style={styles.retryBtn}>
+            <Text style={styles.retryText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <MovieGrid
+          movies={movies}
+          onMoviePress={handleMoviePress}
+          onEndReached={handleEndReached}
+          isLoadingMore={isFetchingNextPage}
+          ListHeaderComponent={ListHeader}
+        />
+      )}
 
       <FilterBottomSheet
-        visible={showSheet}
-        onClose={() => setShowSheet(false)}
+        ref={filterBottomSheetRef}
         onApply={handleApplyFilter}
         currentFilter={filter}
         categories={categories ?? []}

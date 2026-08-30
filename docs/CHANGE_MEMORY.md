@@ -1089,3 +1089,70 @@
 - Regenerate lại patch-package cho React Navigation theo đúng version hiện tại để `npm install` không còn warning giả từ patch filenames cũ; đồng thời loại bỏ phần legacy `react-native-track-player` khỏi baseline thực tế bằng no-op service placeholder.
 
 **Lý do:** User yêu cầu nâng toàn bộ stack để React Navigation 8 alpha chạy được an toàn, có kiểm chứng cả dependency graph lẫn native build/tooling mới.
+
+## 2026-08-30 — Fix nút Bộ lọc không mở được trong FilterScreen
+
+**Files đã sửa:**
+- `app/features/filter/components/FilterBottomSheet.tsx`
+- `app/features/filter/screens/FilterScreen.tsx`
+
+**Chi tiết:**
+- Chuyển luồng mở sheet từ state `visible` + `useEffect` sang imperative ref để `handleOpenSheet` gọi trực tiếp `present()` trên `BottomSheetModal`, tránh lỗi timing khi state đổi nhưng modal chưa sẵn sàng.
+- Luôn mount `FilterBottomSheet` ở cả trạng thái loading, error và success để ref mở modal không bị thiếu; giữ `FullWindowOverlay` trên iOS để sheet hiển thị trên native navigation/tab.
+- Đóng sheet ngay trong component sau khi áp dụng hoặc xóa bộ lọc, đồng thời đồng bộ lại lựa chọn hiện tại mỗi lần mở.
+- Dọn import `FastImage` không còn dùng trong `FilterScreen.tsx` để nhóm file filter quay lại trạng thái lint sạch.
+
+**Lý do:** User báo nút `Bộ lọc` trong `FilterScreen` không mở được sheet lọc.
+
+## 2026-08-30 — Tự động chọn nguồn phát kế tiếp trong MovieDetailScreen
+
+**Files đã sửa:**
+- `app/features/movie/screens/MovieDetailScreen.tsx`
+
+**Chi tiết:**
+- `handleWatch` không còn dừng ngay khi `allEpisodes[0]` thiếu cả `link_m3u8` và `link_embed`; flow xem chính sẽ tìm nguồn hợp lệ cùng tập ở server khác trước, sau đó mới fallback sang phần tử hợp lệ kế tiếp.
+- URL nguồn phát được trim trước khi kiểm tra để chuỗi rỗng hoặc chỉ có khoảng trắng không bị xem là nguồn hợp lệ.
+- Khi người dùng chọn trực tiếp một tập không có nguồn, app vẫn báo lỗi thay vì tự chuyển sang tập khác; chỉ navigate sang `Watch` sau khi đã chọn được episode phát được.
+
+**Lý do:** User yêu cầu nút xem phim tự động bỏ qua `allEpisodes[0]` khi nguồn đầu tiên không tồn tại và dùng nguồn tiếp theo.
+
+## 2026-08-30 — Fix `npm run android` lỗi thiếu dung lượng khi installDebug
+
+**Files đã sửa:**
+- `package.json`
+- `docs/CODEBASE_MEMORY.md`
+
+**Chi tiết:**
+- Xác định build đã thành công nhưng `adb install` thất bại với lỗi thật `Requested internal only, but not enough space`; AVD chỉ còn khoảng 449 MB trong khi debug APK universal có kích thước 190 MB.
+- Cập nhật script `npm run android` thêm `--active-arch-only`, để React Native CLI tự nhận ABI của thiết bị đang kết nối và chỉ build native libraries cần thiết.
+- Verify trên Pixel 8 Pro API 36 ARM64: APK giảm còn 107 MB, `:app:installDebug` thành công, Gradle `BUILD SUCCESSFUL` và `MainActivity` đã được khởi chạy.
+- Cảnh báo deprecated Gradle/Build Tools vẫn là warning từ build scripts hoặc dependency, không phải nguyên nhân của lỗi install lần này.
+
+**Lý do:** User báo `npm run android` fail tại `:app:installDebug` trên emulator.
+
+## 2026-08-30 — Fix FilterBottomSheet không scroll được trên Android
+
+**Files đã sửa:**
+- `app/features/filter/components/FilterBottomSheet.tsx`
+
+**Chi tiết:**
+- Đưa `BottomSheetScrollView` thành scrollable trực tiếp của `BottomSheetModal` thay vì lồng bên trong `BottomSheetView`, để bottom-sheet gesture context nhận đúng vùng cuộn dọc.
+- Chuyển các hàng chip ngang sang `ScrollView` của `react-native-gesture-handler` và bật `nestedScrollEnabled`, tránh pan gesture của sheet chặn thao tác vuốt ngang trên Android.
+- Verify trực tiếp trên Pixel 8 Pro API 36: mở được sheet và vuốt hàng `Thể loại` từ nhóm option đầu sang `Cổ Trang`, `Gia Đình`, `Hài Hước`, `Hành Động` thành công.
+
+**Lý do:** User báo `FilterBottomSheet` trên Android hiển thị được nhưng không thể scroll.
+
+## 2026-08-30 — Fix gesture tua phim trong WatchScreen trên Android
+
+**Files đã sửa:**
+- `app/features/player/screens/WatchScreen.tsx`
+- `app/features/player/components/VideoSeekBar.android.tsx`
+- `docs/CODEBASE_MEMORY.md`
+
+**Chi tiết:**
+- Thay bộ đếm tap thủ công bằng `Gesture.Exclusive` của `react-native-gesture-handler`, giữ native overlay bằng `collapsable={false}` và nhận double tap trong 500ms để tua ±10 giây ổn định trên hai nửa màn hình.
+- Khi controls đang hiện, vùng tap video loại trừ top actions và bottom seek controls để không chặn các nút hoặc thanh tua.
+- Android seek bar chuyển sang bắt đầu ở `onStart`, không tự hủy khi kéo ra ngoài track và luôn gọi hoàn tất trong `onFinalize` nếu gesture bị cancel, tránh state dragging bị kẹt.
+- Verify trên Pixel 8 Pro API 36: single tap hiện controls, swipe slider nhảy từ khoảng 9:25 lên 53:53, double tap trái/phải tạo bước tua xấp xỉ -10/+10 giây.
+
+**Lý do:** User báo `WatchScreen` không thể kéo slider hoặc double tap hai bên để tua phim trên Android.

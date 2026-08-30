@@ -81,7 +81,7 @@ function ActionRow({
 interface OrientationOptionButtonProps {
   active: boolean;
   disabled?: boolean;
-  label: 'LEFT' | 'RIGHT';
+  label: 'Trái' | 'Phải';
   onPress: () => void;
 }
 
@@ -141,13 +141,13 @@ const PlayerPreferencesCard = memo(function PlayerPreferencesCard({
           <OrientationOptionButton
             active={manualLandscapeOrientation === 'left'}
             disabled={disabled}
-            label="LEFT"
+            label="Trái"
             onPress={() => onSelectOrientation('left')}
           />
           <OrientationOptionButton
             active={manualLandscapeOrientation === 'right'}
             disabled={disabled}
-            label="RIGHT"
+            label="Phải"
             onPress={() => onSelectOrientation('right')}
           />
         </View>

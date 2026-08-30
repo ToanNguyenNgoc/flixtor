@@ -1,19 +1,21 @@
 import React, {
   useCallback,
-  useEffect,
+  forwardRef,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, Platform,
 } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetView,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
+import { FullWindowOverlay } from 'react-native-screens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { KKCategory, KKCountry } from '@/types';
 import { Colors, Typography, Spacing, BorderRadius } from '@/config/theme';
@@ -48,12 +50,15 @@ const TYPE_OPTIONS = [
 ];
 
 interface FilterBottomSheetProps {
-  visible: boolean;
-  onClose: () => void;
   onApply: (filter: Record<string, string>) => void;
   currentFilter: Record<string, string | undefined>;
   categories: KKCategory[];
   countries: KKCountry[];
+}
+
+export interface FilterBottomSheetHandle {
+  open: () => void;
+  close: () => void;
 }
 
 interface ChipOption {
@@ -68,6 +73,20 @@ interface ChipGroupProps {
   onChange: (v: string) => void;
 }
 
+function BottomSheetModalContainer({
+  children,
+}: React.PropsWithChildren) {
+  if (Platform.OS === 'ios') {
+    return (
+      <FullWindowOverlay>
+        {children}
+      </FullWindowOverlay>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function ChipGroup({
   label,
   options,
@@ -79,6 +98,8 @@ function ChipGroup({
       <Text style={styles.groupLabel}>{label}</Text>
       <ScrollView
         horizontal
+        nestedScrollEnabled
+        directionalLockEnabled
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipScrollContent}
       >
@@ -104,14 +125,12 @@ function ChipGroup({
   );
 }
 
-export default function FilterBottomSheet({
-  visible,
-  onClose,
+const FilterBottomSheet = forwardRef<FilterBottomSheetHandle, FilterBottomSheetProps>(function FilterBottomSheetComponent({
   onApply,
   currentFilter,
   categories,
   countries,
-}: FilterBottomSheetProps) {
+}, ref) {
   const bottomSheetRef = useRef<React.ElementRef<typeof BottomSheetModal>>(null);
   const insets = useSafeAreaInsets();
   const [local, setLocal] = useState({ ...currentFilter });
@@ -141,20 +160,26 @@ export default function FilterBottomSheet({
     />
   ), []);
 
-  useEffect(() => {
-    if (visible) {
-      setLocal({ ...currentFilter });
-      bottomSheetRef.current?.present();
-      return;
-    }
+  const open = useCallback(() => {
+    setLocal({ ...currentFilter });
+    bottomSheetRef.current?.present();
+  }, [currentFilter]);
 
+  const close = useCallback(() => {
     bottomSheetRef.current?.dismiss();
-  }, [currentFilter, visible]);
+  }, []);
+
+  useImperativeHandle(ref, () => ({ open, close }), [close, open]);
+
+  const handleApply = useCallback((filter: Record<string, string>) => {
+    onApply(filter);
+    close();
+  }, [close, onApply]);
 
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      onDismiss={onClose}
+      containerComponent={BottomSheetModalContainer}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
       enablePanDownToClose
@@ -162,70 +187,71 @@ export default function FilterBottomSheet({
       backgroundStyle={styles.sheet}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetView style={styles.content}>
+      <BottomSheetScrollView
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={styles.title}>Bộ lọc phim</Text>
 
-        <BottomSheetScrollView
-          showsVerticalScrollIndicator={false}
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <ChipGroup
-            label="Loại phim"
-            options={TYPE_OPTIONS}
-            value={local.typeList ?? ''}
-            onChange={v => set('typeList', v)}
-          />
-          <ChipGroup
-            label="Thể loại"
-            options={categoryOptions}
-            value={local.category ?? ''}
-            onChange={v => set('category', v)}
-          />
-          <ChipGroup
-            label="Quốc gia"
-            options={countryOptions}
-            value={local.country ?? ''}
-            onChange={v => set('country', v)}
-          />
-          <ChipGroup
-            label="Năm phát hành"
-            options={YEAR_OPTIONS.map(y => ({ label: y, value: y }))}
-            value={local.year ?? ''}
-            onChange={v => set('year', v)}
-          />
-          <ChipGroup
-            label="Ngôn ngữ"
-            options={LANG_OPTIONS}
-            value={local.lang ?? ''}
-            onChange={v => set('lang', v)}
-          />
-          <ChipGroup
-            label="Sắp xếp"
-            options={SORT_OPTIONS}
-            value={local.sortField ?? ''}
-            onChange={v => set('sortField', v)}
-          />
-        </BottomSheetScrollView>
+        <ChipGroup
+          label="Loại phim"
+          options={TYPE_OPTIONS}
+          value={local.typeList ?? ''}
+          onChange={v => set('typeList', v)}
+        />
+        <ChipGroup
+          label="Thể loại"
+          options={categoryOptions}
+          value={local.category ?? ''}
+          onChange={v => set('category', v)}
+        />
+        <ChipGroup
+          label="Quốc gia"
+          options={countryOptions}
+          value={local.country ?? ''}
+          onChange={v => set('country', v)}
+        />
+        <ChipGroup
+          label="Năm phát hành"
+          options={YEAR_OPTIONS.map(y => ({ label: y, value: y }))}
+          value={local.year ?? ''}
+          onChange={v => set('year', v)}
+        />
+        <ChipGroup
+          label="Ngôn ngữ"
+          options={LANG_OPTIONS}
+          value={local.lang ?? ''}
+          onChange={v => set('lang', v)}
+        />
+        <ChipGroup
+          label="Sắp xếp"
+          options={SORT_OPTIONS}
+          value={local.sortField ?? ''}
+          onChange={v => set('sortField', v)}
+        />
 
         <View style={[styles.actions, { paddingBottom: actionsBottomPadding }]}>
           <TouchableOpacity
             style={styles.clearBtn}
             onPress={() => {
               setLocal(clearedFilter);
-              onApply(clearedFilter);
+              handleApply(clearedFilter);
             }}
           >
             <Text style={styles.clearText}>Xóa lọc</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.applyBtn} onPress={() => onApply(local as Record<string, string>)}>
+          <TouchableOpacity style={styles.applyBtn} onPress={() => handleApply(local as Record<string, string>)}>
             <Text style={styles.applyText}>Áp dụng</Text>
           </TouchableOpacity>
         </View>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
-}
+});
+
+export default FilterBottomSheet;
 
 const styles = StyleSheet.create({
   sheet: {
@@ -248,8 +274,7 @@ const styles = StyleSheet.create({
     color: Colors.text, paddingHorizontal: Spacing.base, marginBottom: Spacing.md,
     paddingTop: Spacing.sm,
   },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.lg },
+  scrollContent: { paddingBottom: Spacing.sm },
   group: { marginBottom: Spacing.lg, paddingLeft: Spacing.base },
   groupLabel: {
     color: Colors.textSecondary, fontSize: Typography.fontSize.sm,

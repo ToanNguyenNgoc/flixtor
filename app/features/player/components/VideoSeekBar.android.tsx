@@ -59,6 +59,8 @@ function AndroidVideoSeekBar({
   const trackWidth = useSharedValue(0);
   const progress = useSharedValue(0);
   const bufferProgress = useSharedValue(0);
+  const activeSeekTime = useSharedValue(0);
+  const isPanActive = useSharedValue(false);
 
   useEffect(() => {
     progress.value = timeToProgress(currentTime, duration);
@@ -85,7 +87,8 @@ function AndroidVideoSeekBar({
   const panGesture = Gesture.Pan()
     .enabled(!disabled && duration > 0)
     .minDistance(0)
-    .onBegin(event => {
+    .shouldCancelWhenOutside(false)
+    .onStart(event => {
       const width = trackWidth.value;
       if (width <= 0) {
         return;
@@ -96,6 +99,8 @@ function AndroidVideoSeekBar({
       const nextTime = nextProgress * duration;
 
       progress.value = nextProgress;
+      activeSeekTime.value = nextTime;
+      isPanActive.value = true;
       runOnJS(emitSeekStart)(nextTime);
       runOnJS(emitSeekChange)(nextTime);
     })
@@ -110,6 +115,7 @@ function AndroidVideoSeekBar({
       const nextTime = nextProgress * duration;
 
       progress.value = nextProgress;
+      activeSeekTime.value = nextTime;
       runOnJS(emitSeekChange)(nextTime);
     })
     .onEnd(event => {
@@ -123,7 +129,17 @@ function AndroidVideoSeekBar({
       const nextTime = nextProgress * duration;
 
       progress.value = nextProgress;
+      activeSeekTime.value = nextTime;
+      isPanActive.value = false;
       runOnJS(emitSeekComplete)(nextTime);
+    })
+    .onFinalize(() => {
+      if (!isPanActive.value) {
+        return;
+      }
+
+      isPanActive.value = false;
+      runOnJS(emitSeekComplete)(activeSeekTime.value);
     });
 
   const bufferedStyle = useAnimatedStyle(() => ({

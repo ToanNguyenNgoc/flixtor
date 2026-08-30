@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, LayoutAnimation, Linking, Platform, UIManager
+  ActivityIndicator, Alert, LayoutAnimation, Linking, Platform, UIManager
 } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -25,7 +25,7 @@ import { useWindowDimensions } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import type { KKEpisode, KKEpisodeServer, FavoriteMovie } from '@/types';
+import type { KKEpisode, FavoriteMovie } from '@/types';
 import { Colors, Typography, Spacing, BorderRadius } from '@/config/theme';
 import { useMovieDetail } from '../hooks/useMovieDetail';
 import { useFavoriteStore } from '@/features/favorites/store/favoriteStore';
@@ -72,6 +72,39 @@ function extractYoutubeVideoId(url?: string): string | null {
   return null;
 }
 
+function hasPlayableSource(episode?: KKEpisode): boolean {
+  return Boolean(
+    episode?.link_m3u8?.trim()
+    || episode?.link_embed?.trim(),
+  );
+}
+
+function getNextPlayableEpisode(
+  allEpisodes: KKEpisode[],
+  initialEpisode?: KKEpisode,
+): KKEpisode | undefined {
+  if (hasPlayableSource(initialEpisode)) {
+    return initialEpisode;
+  }
+
+  const initialIndex = initialEpisode
+    ? allEpisodes.indexOf(initialEpisode)
+    : -1;
+  const remainingEpisodes = allEpisodes.slice(initialIndex + 1);
+
+  if (initialEpisode?.slug) {
+    const sameEpisodeFromAnotherServer = remainingEpisodes.find(episode => (
+      episode.slug === initialEpisode.slug && hasPlayableSource(episode)
+    ));
+
+    if (sameEpisodeFromAnotherServer) {
+      return sameEpisodeFromAnotherServer;
+    }
+  }
+
+  return remainingEpisodes.find(hasPlayableSource);
+}
+
 export default function MovieDetailScreen() {
   const navigation = useNavigation() as unknown as Nav;
   const route = useRoute() as unknown as Route;
@@ -82,8 +115,10 @@ export default function MovieDetailScreen() {
   const { isFavorite, toggleFavorite } = useFavoriteStore();
 
   const movie = data?.movie;
-  const episodes: KKEpisodeServer[] = Array.isArray(data?.episodes) ? data!.episodes! : [];
-  const allEpisodes: KKEpisode[] = getAllEpisodes(episodes);
+  const allEpisodes = useMemo<KKEpisode[]>(
+    () => getAllEpisodes(Array.isArray(data?.episodes) ? data.episodes : []),
+    [data?.episodes],
+  );
   const isFav = isFavorite(slug);
   const trailerVideoId = useMemo(
     () => extractYoutubeVideoId(movie?.trailer_url),
@@ -147,18 +182,25 @@ export default function MovieDetailScreen() {
   }, [movie, toggleFavorite]);
 
   const handleWatch = useCallback((ep?: KKEpisode) => {
-    // Guard: episode must have at least one valid video source
-    if (ep !== undefined) {
-      const hasSource = !!(ep.link_m3u8 || ep.link_embed);
-      if (!hasSource) {
-        // No video source — show alert instead of navigating
-        const { Alert } = require('react-native');
-        Alert.alert('Chưa có nguồn phát', 'Tập phim này chưa có nguồn video. Vui lòng thử tập khác.');
-        return;
-      }
+    const isInitialEpisode = ep === undefined || ep === allEpisodes[0];
+    const episodeToWatch = isInitialEpisode
+      ? getNextPlayableEpisode(allEpisodes, ep)
+      : ep;
+
+    if (!episodeToWatch || !hasPlayableSource(episodeToWatch)) {
+      Alert.alert(
+        'Chưa có nguồn phát',
+        'Tập phim này chưa có nguồn video. Vui lòng thử tập khác.',
+      );
+      return;
     }
-    navigation.navigate('Watch', { slug, episodeSlug: ep?.slug, serverName: ep?.server_name });
-  }, [navigation, slug]);
+
+    navigation.navigate('Watch', {
+      slug,
+      episodeSlug: episodeToWatch.slug,
+      serverName: episodeToWatch.server_name,
+    });
+  }, [allEpisodes, navigation, slug]);
 
   const handleOpenTrailerExternal = useCallback(() => {
     if (movie?.trailer_url) {

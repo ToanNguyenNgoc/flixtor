@@ -10,13 +10,14 @@
  * Solution: Keep overlays inside the same screen tree using absolute Views.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
   StatusBar, BackHandler, FlatList, Platform, Alert, Pressable, useWindowDimensions,
   AppState, type AppStateStatus,
-  type GestureResponderEvent, type LayoutChangeEvent,
+  type LayoutChangeEvent,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   useFocusEffect, useNavigation, useRoute, type RouteProp,
 } from '@react-navigation/native';
@@ -103,6 +104,7 @@ type WatchNav = NativeStackNavigationProp<RootStackParamList>;
 
 const HIDE_MS = 3500;
 const SEEK_S = 10;
+const DOUBLE_TAP_DELAY_MS = 500;
 const SAVE_INTERVAL_MS = 15_000;
 const REMOTE_SAVE_MIN_DELTA_SECONDS = 8;
 const REMOTE_SAVE_SEEK_SETTLE_MS = 1500;
@@ -499,8 +501,6 @@ export default function WatchScreen() {
   const lastUiBufferSyncRef = useRef(0);
   const isDraggingSliderRef = useRef(false);
 
-  const lastTap = useRef<number>(0);
-  const singleTapTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const targetSeekTime = useRef<number>(-1);
   const seekTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -633,25 +633,25 @@ export default function WatchScreen() {
     unlockAfterPendingOrientationRef.current = shouldUnlockAfterSettle;
 
     if (orientation === OrientationType['LANDSCAPE-LEFT']) {
-      try { Orientation.lockToLandscapeLeft(); } catch (_) { /* ignore */ }
+      try { Orientation.lockToLandscapeLeft(); } catch { /* ignore */ }
       return;
     }
 
-    try { Orientation.lockToLandscapeRight(); } catch (_) { /* ignore */ }
+    try { Orientation.lockToLandscapeRight(); } catch { /* ignore */ }
   }, []);
 
   const lockToPortraitMode = useCallback(() => {
     pendingOrientationRef.current = OrientationType.PORTRAIT;
     unlockAfterPendingOrientationRef.current = false;
 
-    try { Orientation.lockToPortrait(); } catch (_) { /* ignore */ }
+    try { Orientation.lockToPortrait(); } catch { /* ignore */ }
   }, []);
 
   const restoreAppOrientation = useCallback(() => {
     clearPendingOrientation();
     uiOrientationRef.current = OrientationType.PORTRAIT;
 
-    try { Orientation.lockToPortrait(); } catch (_) { /* ignore */ }
+    try { Orientation.lockToPortrait(); } catch { /* ignore */ }
     clearAndroidGestureExclusionRects();
     exitImmersiveVideoMode();
     StatusBar.setHidden(false, 'fade');
@@ -682,7 +682,7 @@ export default function WatchScreen() {
     clearPendingOrientation();
 
     if (shouldUnlockAfterSettle && isAutoRotateEnabledRef.current) {
-      try { Orientation.unlockAllOrientations(); } catch (_) { /* ignore */ }
+      try { Orientation.unlockAllOrientations(); } catch { /* ignore */ }
     }
   }, [clearPendingOrientation]);
 
@@ -821,7 +821,6 @@ export default function WatchScreen() {
   useEffect(() => () => {
     clearHideTimer();
     clearReadyForDisplayTimer();
-    if (singleTapTimeout.current) clearTimeout(singleTapTimeout.current);
     if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
     if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
     if (seekStableRemoteSaveTimerRef.current) clearTimeout(seekStableRemoteSaveTimerRef.current);
@@ -862,7 +861,7 @@ export default function WatchScreen() {
     const baseTime = (isSeeking && targetSeekTime.current !== -1) ? targetSeekTime.current : progressRef.current.time;
     const newTime = Math.max(0, Math.min(baseTime + amount, dur));
 
-    try { videoRef.current.seek(newTime); } catch (_) { /* ignore */ }
+    try { videoRef.current.seek(newTime); } catch { /* ignore */ }
     syncCurrentTime(newTime);
     progressRef.current.time = newTime;
 
@@ -870,31 +869,42 @@ export default function WatchScreen() {
     showFeedback(amount > 0 ? `+${amount}s` : `${amount}s`, amount > 0 ? 'right' : 'left');
   }, [showFeedback, startSeekUI, isSeeking, syncCurrentTime]);
 
-  const handleTap = useCallback((e: GestureResponderEvent) => {
-    const now = Date.now();
-    const locX = e.nativeEvent.locationX;
-
-    if (now - lastTap.current < 300) {
-      if (singleTapTimeout.current) {
-        clearTimeout(singleTapTimeout.current);
-        singleTapTimeout.current = undefined;
-      }
-      lastTap.current = 0;
-
-      const screenWidth = window.width;
-      if (locX < screenWidth / 2) {
-        handleDoubleTapSeek(-10);
-      } else {
-        handleDoubleTapSeek(10);
-      }
-    } else {
-      lastTap.current = now;
-      if (singleTapTimeout.current) clearTimeout(singleTapTimeout.current);
-      singleTapTimeout.current = setTimeout(() => {
-        showControls ? setShowControls(false) : revealControls();
-      }, 250);
+  const handleSingleTap = useCallback(() => {
+    if (showControls) {
+      setShowControls(false);
+      return;
     }
-  }, [handleDoubleTapSeek, revealControls, showControls, window.width]);
+
+    revealControls();
+  }, [revealControls, showControls]);
+
+  const handleScreenDoubleTap = useCallback((x: number) => {
+    handleDoubleTapSeek(x < window.width / 2 ? -SEEK_S : SEEK_S);
+  }, [handleDoubleTapSeek, window.width]);
+
+  const videoTapGesture = useMemo(() => {
+    const doubleTap = Gesture.Tap()
+      .numberOfTaps(2)
+      .maxDelay(DOUBLE_TAP_DELAY_MS)
+      .maxDuration(250)
+      .runOnJS(true)
+      .onEnd((event, success) => {
+        if (success) {
+          handleScreenDoubleTap(event.x);
+        }
+      });
+    const singleTap = Gesture.Tap()
+      .numberOfTaps(1)
+      .maxDuration(250)
+      .runOnJS(true)
+      .onEnd((event, success) => {
+        if (success && Number.isFinite(event.x)) {
+          handleSingleTap();
+        }
+      });
+
+    return Gesture.Exclusive(doubleTap, singleTap);
+  }, [handleScreenDoubleTap, handleSingleTap]);
 
   // ── Progress save ────────────────────────────────────────────────────────
 
@@ -1127,14 +1137,14 @@ export default function WatchScreen() {
 
     if (pendingSeekTime.current !== -1) {
       const nextSeekTime = Math.max(0, Math.min(pendingSeekTime.current, nextDuration));
-      try { videoRef.current?.seek(nextSeekTime); } catch (_) { /* ignore */ }
+      try { videoRef.current?.seek(nextSeekTime); } catch { /* ignore */ }
       syncCurrentTime(nextSeekTime);
       progressRef.current.time = nextSeekTime;
       pendingSeekTime.current = -1;
     } else if (resumeAt > 0 && nextDuration > 0) {
       const nextSeekTime = Math.max(0, Math.min(resumeAt, nextDuration));
       if (nextSeekTime > 0) {
-        try { videoRef.current?.seek(nextSeekTime); } catch (_) { /* ignore */ }
+        try { videoRef.current?.seek(nextSeekTime); } catch { /* ignore */ }
         syncCurrentTime(nextSeekTime);
         progressRef.current.time = nextSeekTime;
       }
@@ -1250,7 +1260,7 @@ export default function WatchScreen() {
   const seek = useCallback((secs: number) => {
     const baseTime = (isSeeking && targetSeekTime.current !== -1) ? targetSeekTime.current : currentTime;
     const target = Math.max(0, Math.min(baseTime + secs, duration));
-    try { videoRef.current?.seek(target); } catch (_) { /* ignore */ }
+    try { videoRef.current?.seek(target); } catch { /* ignore */ }
     syncCurrentTime(target);
     startSeekUI(target);
     revealControls();
@@ -1352,7 +1362,7 @@ export default function WatchScreen() {
 
   const handleSeekComplete = useCallback((time: number) => {
     const target = Math.max(0, Math.min(time, duration));
-    try { videoRef.current?.seek(target); } catch (_) { /* ignore */ }
+    try { videoRef.current?.seek(target); } catch { /* ignore */ }
     isDraggingSliderRef.current = false;
     setIsDraggingSlider(false);
     syncCurrentTime(target);
@@ -1599,18 +1609,16 @@ export default function WatchScreen() {
             </View>
           )}
 
-          {!showControls ? (
-            <Pressable
-              style={StyleSheet.absoluteFill}
-              onPress={handleTap}
-            />
-          ) : (
-            <Pressable
-              style={styles.videoGestureLayer}
-              onPress={handleTap}
+          <GestureDetector gesture={videoTapGesture}>
+            <View
+              collapsable={false}
+              style={[
+                styles.videoGestureLayer,
+                showControls && styles.tapLayerWithControls,
+              ]}
               pointerEvents={isDraggingSlider || showEpDrawer || showQualityModal ? 'none' : 'auto'}
             />
-          )}
+          </GestureDetector>
 
           {!!tapFeedback.side && (
             <View style={[
@@ -1821,6 +1829,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tapLayerWithControls: {
+    top: TOP_GESTURE_EXCLUSION,
     bottom: BOTTOM_CONTROLS_TOUCH_EXCLUSION,
   },
 
@@ -1943,10 +1952,10 @@ const styles = StyleSheet.create({
 
   videoGestureLayer: {
     position: 'absolute',
-    top: TOP_GESTURE_EXCLUSION,
+    top: 0,
     left: 0,
     right: 0,
-    bottom: BOTTOM_CONTROLS_TOUCH_EXCLUSION,
+    bottom: 0,
     zIndex: 10,
   },
   bottomBar: {

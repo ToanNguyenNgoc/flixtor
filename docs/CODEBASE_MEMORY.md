@@ -60,7 +60,7 @@ Providers wrap order:
 - `MainNavigator` hiện dùng tab bar do app tự render riêng trên Android; iOS vẫn giữ implementation mặc định/native khi khả dụng. Mục tiêu là tránh regression tab press của `@react-navigation/bottom-tabs` alpha trên Android trong khi vẫn giữ icon SVG hiện tại.
 - `NavigationContainer` hiện truyền explicit dark theme theo `Colors.*` của app để native stack/tab transitions không fallback sang nền trắng mặc định của React Navigation trên iOS.
 - Android/iOS hiện dùng native `react-native-bootsplash` cho launch/loading đầu app; `BootSplash.hide({ fade: true })` chỉ chạy sau khi bootstrap và check system status xong, không còn overlay splash riêng ở layer React Native.
-- Android debug build mặc định chỉ đóng gói `arm64-v8a,x86_64` qua `reactNativeArchitectures` để APK dev bớt phình; có thể override từ CLI nếu cần ABI khác.
+- `npm run android` dùng `--active-arch-only` để debug APK chỉ đóng gói ABI của thiết bị/emulator đang kết nối, tránh lỗi cài đặt do APK universal quá lớn; các lệnh Gradle/release vẫn dùng `arm64-v8a,x86_64` từ `reactNativeArchitectures` và có thể override từ CLI khi cần ABI khác.
 - `@tanstack/react-query` đã lên v5, nên các query dùng `gcTime`/`initialPageParam` theo API mới.
 - Repo hiện typecheck sạch với baseline mới; `service.ts` được giữ lại như no-op placeholder vì `react-native-track-player` không còn nằm trong stack app và không còn được register ở `index.js`.
 - iOS hiện có patch-package `patches/react-native-view-shot+4.0.3.patch` để `react-native-view-shot` nhận đúng `RCTScrollViewComponentView` trên React Native 0.86 / New Architecture.
@@ -241,6 +241,7 @@ Hooks và stores không cần sửa.
 - Controls overlay không còn phủ nền tối toàn màn hình; thay vào đó chỉ top/bottom bars giữ nền mờ để giảm GPU overdraw.
 - Với source native (`m3u8`), `WatchScreen` hiện bật `playInBackground`, `playWhenInactive` và `showNotificationControls`; riêng `enterPictureInPictureOnLeave` và nút `PiP` thủ công sẽ tôn trọng setting `Picture in Picture` trong `ProfileScreen`. Source `embed` thì không hỗ trợ các feature PiP này.
 - Controls auto-hide sau 3500ms
+- Single tap và double tap trên video dùng `Gesture.Exclusive`: single tap bật/tắt controls, double tap trong cửa sổ 500ms ở nửa trái/phải tua ±10 giây; native gesture view được giữ bằng `collapsable={false}` để Android không tối ưu bỏ vùng nhận touch.
 - Seek ±10 giây
 - Progress được lưu vào `watchHistoryStore` để resume/history tiếp tục hoạt động khi đổi orientation hoặc back khỏi màn xem.
 
@@ -275,6 +276,7 @@ Hooks và stores không cần sửa.
 - `WatchScreen` render seek bar thông qua component chung `VideoSeekBar`.
 - `app/features/player/components/VideoSeekBar.ios.tsx` giữ nguyên native slider `@react-native-community/slider` cho iOS.
 - `app/features/player/components/VideoSeekBar.android.tsx` dùng `react-native-gesture-handler` + `react-native-reanimated` để vẽ seek bar custom riêng cho Android, tránh lỗi native slider không nhận drag ổn định trên một số máy.
+- Android seek bar luôn hoàn tất phiên kéo trong `onFinalize` nếu pan gesture bị hệ thống cancel, tránh state dragging bị kẹt và vô hiệu hóa các gesture video tiếp theo.
 - `VideoSeekBar` dùng chung props seek (`duration`, `currentTime`, `bufferedTime`, `onSeekStart`, `onSeekChange`, `onSeekComplete`) để logic player trong `WatchScreen` không bị tách nhánh nhiều theo platform.
 
 ---

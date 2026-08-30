@@ -1190,3 +1190,73 @@
 - **Mô tả**: Thêm bộ lệnh smoke build tối thiểu cho Android debug và iOS simulator để mỗi lần nâng React Native/Navigation có thể verify native compile nhanh, thay vì chỉ dựa vào `npm install`.
 - **Files dự kiến**: `package.json`, `docs/`, có thể thêm CI config
 - **Priority**: high
+
+### Filter Screen Interaction Smoke Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa nút `Bộ lọc` không mở sheet (2026-08-30)
+- **Mô tả**: Thêm smoke test hoặc checklist cho flow mở/đóng `FilterBottomSheet`, scroll dọc, scroll chip ngang trên Android, chạm backdrop để dismiss và apply filter để tránh lỗi interaction quay lại sau các lần nâng navigation hoặc bottom-sheet.
+- **Files dự kiến**: `docs/`, có thể thêm e2e flow nếu repo bổ sung automation
+- **Priority**: medium
+
+### Persist Last Used Filter State
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa trải nghiệm `FilterScreen` (2026-08-30)
+- **Mô tả**: Lưu lại bộ lọc gần nhất của người dùng để khi quay lại tab `Khám phá`, app có thể khôi phục ngay lựa chọn cũ thay vì bắt đầu lại từ đầu.
+- **Files dự kiến**: `app/features/filter/screens/FilterScreen.tsx`, có thể thêm store/storage util liên quan
+- **Priority**: medium
+
+### Active Filter Count Badge
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa `FilterBottomSheet` (2026-08-30)
+- **Mô tả**: Hiển thị badge số lượng filter đang bật ngay trên nút `Bộ lọc` để người dùng biết màn đang lọc theo bao nhiêu tiêu chí mà không cần mở sheet.
+- **Files dự kiến**: `app/features/filter/screens/FilterScreen.tsx`, `app/features/filter/components/FilterBottomSheet.tsx`
+- **Priority**: low
+
+### Playback Error Server Fallback
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm fallback nguồn phát trong `MovieDetailScreen` (2026-08-30)
+- **Mô tả**: Khi URL tồn tại nhưng player tải thất bại, tự động thử cùng tập trên server kế tiếp trước khi hiện lỗi cho người dùng.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/utils/episode.ts`
+- **Priority**: high
+
+### Episode Source Availability Badge
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm fallback nguồn phát trong `MovieDetailScreen` (2026-08-30)
+- **Mô tả**: Hiển thị trạng thái nguồn phát trên từng tập để phân biệt tập có HLS, chỉ có embed hoặc chưa có nguồn.
+- **Files dự kiến**: `app/features/movie/screens/MovieDetailScreen.tsx`, `app/config/theme.ts`
+- **Priority**: low
+
+### Episode Fallback Unit Tests
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm fallback nguồn phát trong `MovieDetailScreen` (2026-08-30)
+- **Mô tả**: Tách logic chọn nguồn thành utility và thêm unit test cho nguồn đầu trống, fallback cùng tập khác server, fallback phần tử kế tiếp và không có nguồn nào.
+- **Files dự kiến**: `app/utils/episode.ts`, test setup liên quan
+- **Priority**: medium
+
+### Sticky Filter Actions
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa scroll Android cho `FilterBottomSheet` (2026-08-30)
+- **Mô tả**: Giữ hai nút `Xóa lọc` và `Áp dụng` cố định ở đáy sheet trong khi phần tiêu chí cuộn độc lập, giúp thao tác nhanh hơn trên màn hình nhỏ.
+- **Files dự kiến**: `app/features/filter/components/FilterBottomSheet.tsx`
+- **Priority**: medium
+
+### Searchable Filter Options
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa scroll Android cho `FilterBottomSheet` (2026-08-30)
+- **Mô tả**: Bổ sung tìm kiếm nhanh cho danh sách thể loại và quốc gia để không phải vuốt qua quá nhiều chip ngang.
+- **Files dự kiến**: `app/features/filter/components/FilterBottomSheet.tsx`
+- **Priority**: low
+
+### WatchScreen Seek Gesture E2E Regression Test
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa gesture tua phim trên Android (2026-08-30)
+- **Mô tả**: Thêm E2E test cho single tap hiện controls, double tap trái/phải tua ±10 giây và kéo slider vẫn hoàn tất khi pan bị cancel để tránh regression sau khi nâng Gesture Handler hoặc React Native.
+- **Files dự kiến**: E2E test setup, `app/features/player/screens/WatchScreen.tsx`, `app/features/player/components/VideoSeekBar.android.tsx`
+- **Priority**: high
+
+### Configurable Double-Tap Seek Duration
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi sửa gesture tua phim trên Android (2026-08-30)
+- **Mô tả**: Cho phép người dùng chọn bước tua double tap 5, 10 hoặc 15 giây trong player preferences thay vì cố định 10 giây.
+- **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`, `app/features/profile/screens/ProfileScreen.tsx`
+- **Priority**: low
