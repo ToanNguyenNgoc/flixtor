@@ -21,6 +21,7 @@ import {
   Typography,
 } from '@/config/theme';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { useFaphouseStore } from '@/features/faphouse/store/faphouseStore';
 import {
   usePlayerPreferencesStore,
   type ManualLandscapeOrientationPreference,
@@ -198,12 +199,18 @@ export default function ProfileScreen() {
   const setPictureInPictureEnabled = usePlayerPreferencesStore(
     state => state.setPictureInPictureEnabled,
   );
+  const isFaphouseEnabled = useFaphouseStore(state => state.isEnabled);
+  const disableFaphouse = useFaphouseStore(state => state.disable);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     void initializePlayerPreferences();
   }, [initializePlayerPreferences]);
+
+  const handleDisableFaphouse = () => {
+    disableFaphouse();
+  };
 
   const handleOpenSettings = () => {
     navigation.navigate('Setting');
@@ -342,6 +349,13 @@ export default function ProfileScreen() {
               label="Cài đặt ứng dụng"
               onPress={handleOpenSettings}
             />
+            {isFaphouseEnabled && (
+              <ActionRow
+                icon="EyeScrossed"
+                label="Tắt Faphouse"
+                onPress={handleDisableFaphouse}
+              />
+            )}
           </View>
         </View>
 
@@ -429,6 +443,13 @@ export default function ProfileScreen() {
             label="Cài đặt ứng dụng"
             onPress={handleOpenSettings}
           />
+          {isFaphouseEnabled && (
+            <ActionRow
+              icon="EyeScrossed"
+              label="Tắt Faphouse"
+              onPress={handleDisableFaphouse}
+            />
+          )}
           <ActionRow
             danger
             icon="SignOut"

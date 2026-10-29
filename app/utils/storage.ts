@@ -19,6 +19,7 @@ export const StorageKeys = {
   APP_SETTINGS: '@flixtor/app_settings',
   SEARCH_HISTORY: '@flixtor/search_history',
   PLAYER_PREFERENCES: '@flixtor/player_preferences',
+  FAPHOUSE_ENABLED: '@flixtor/faphouse_enabled',
 } as const;
 
 type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

@@ -65,6 +65,7 @@ import type {
 import { Colors, Typography, Spacing, BorderRadius } from '@/config/theme';
 import { formatTime } from '@/utils/formatTime';
 import { useMovieDetail } from '@/features/movie/hooks/useMovieDetail';
+import { useFaphouseWatchDetail } from '@/features/faphouse/hooks/useFaphouse';
 import { useWatchHistoryStore } from '@/features/history/store/watchHistoryStore';
 import {
   getAllEpisodes,
@@ -219,7 +220,7 @@ const EpisodeItem = React.memo(function EpisodeItem({ ep, idx, active, onPress }
 });
 
 interface PlayerMediaSurfaceProps {
-  videoSourceType: 'm3u8' | 'embed' | 'none';
+  videoSourceType: 'm3u8' | 'mp4' | 'embed' | 'none';
   videoUri: string;
   fallbackUri?: string;
   metadataImageUri?: string;
@@ -459,7 +460,10 @@ export default function WatchScreen() {
   const routeResume: number = route.params?.initialProgressSeconds ?? route.params?.resumeProgress ?? 0;
 
   // ── Remote data ──────────────────────────────────────────────────────────
-  const { data, isLoading, isError } = useMovieDetail(slug);
+  const isFaphouse = route.params?.source === 'faphouse';
+  const phimDetail = useMovieDetail(isFaphouse ? '' : slug);
+  const faphouseDetail = useFaphouseWatchDetail(isFaphouse ? slug : '');
+  const { data, isLoading, isError } = isFaphouse ? faphouseDetail : phimDetail;
   const { saveProgress, getResumeProgress } = useWatchHistoryStore();
 
   const movie = data?.movie;
@@ -909,7 +913,8 @@ export default function WatchScreen() {
   // ── Progress save ────────────────────────────────────────────────────────
 
   const saveLocalProgress = useCallback(() => {
-    if (!movie || !currentEp) {
+    // Lịch sử xem local/remote gắn với slug KKPhim, nên bỏ qua phim Faphouse.
+    if (isFaphouse || !movie || !currentEp) {
       return;
     }
 
@@ -933,10 +938,10 @@ export default function WatchScreen() {
     };
 
     saveProgress(item);
-  }, [movie, currentEp, saveProgress]);
+  }, [isFaphouse, movie, currentEp, saveProgress]);
 
   const buildRemoteHistoryEntry = useCallback((progressOverride?: number) => {
-    if (!isAuthenticated || !authToken || !movie?.slug) {
+    if (isFaphouse || !isAuthenticated || !authToken || !movie?.slug) {
       return null;
     }
 
@@ -962,7 +967,7 @@ export default function WatchScreen() {
       key: `${payload.movieSlug}:${payload.episodeSlug ?? 'default'}`,
       payload,
     };
-  }, [authToken, currentEp, isAuthenticated, isSingleEpisodeMovie, movie?.slug]);
+  }, [authToken, currentEp, isAuthenticated, isFaphouse, isSingleEpisodeMovie, movie?.slug]);
 
   const syncRemoteHistoryCache = useCallback((payload: WatchHistoryPayload) => {
     if (!movie?.slug) {

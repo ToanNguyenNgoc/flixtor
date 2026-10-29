@@ -1156,3 +1156,48 @@
 - Verify trên Pixel 8 Pro API 36: single tap hiện controls, swipe slider nhảy từ khoảng 9:25 lên 53:53, double tap trái/phải tạo bước tua xấp xỉ -10/+10 giây.
 
 **Lý do:** User báo `WatchScreen` không thể kéo slider hoặc double tap hai bên để tua phim trên Android.
+
+## 2026-10-29 — Thêm Faphouse (Home section, danh sách + filter, chi tiết, phát phim)
+
+**Files đã thêm/sửa:**
+- `app/features/faphouse/**` (types, service, hooks, `FaphouseMovieCard`, `FaphouseSection`, `FaphouseFilterRow`, `FaphouseScreen`, `FaphouseDetailScreen`)
+- `app/features/home/screens/HomeScreen.tsx` (footer `FaphouseSection`)
+- `app/features/player/screens/WatchScreen.tsx` (param `source: 'faphouse'`, bỏ lưu lịch sử cho Faphouse)
+- `app/navigation/types.ts`, `app/navigation/RootNavigator.tsx` (route `Faphouse`, `FaphouseDetail`)
+- `app/types/index.ts`, `app/utils/episode.ts` (`link_mp4`, `VideoSourceType` thêm `mp4`)
+- `app/utils/constants.ts` (`FAPHOUSE_API_BASE_URL`, `FAPHOUSE_PAGE_SIZE`)
+
+**Lý do:** User yêu cầu section Faphouse cuối Home, màn hình danh sách có bộ lọc, màn hình chi tiết và xem phim như bình thường.
+
+## 2026-10-29 — Fix build iOS với Xcode 27
+
+**Files đã sửa:** `ios/Podfile`, `ios/Flixtor/AppDelegate.swift`, `ios/Flixtor/SceneDelegate.swift` (mới), `ios/Flixtor/Info.plist`, `ios/Flixtor.xcodeproj/project.pbxproj`
+
+**Chi tiết:** Podfile nâng `IPHONEOS_DEPLOYMENT_TARGET` của mọi pod thấp hơn `min_ios_version_supported`; app chuyển sang UIScene lifecycle (SceneDelegate tạo window + start React Native) vì SDK mới crash khi thiếu scene manifest.
+
+**Lý do:** Xcode 27 báo lỗi deployment target và app treo ở splash do thiếu UIScene lifecycle.
+
+## 2026-10-29 — Faphouse: hiển thị link phim ở màn chi tiết
+
+**Files đã sửa:** `app/features/faphouse/screens/FaphouseDetailScreen.tsx`
+
+**Chi tiết:** Thêm mục "Đường dẫn phim" hiển thị `media.url`; bấm vào mở bằng trình duyệt hệ thống (`Linking.openURL`), lỗi thì hiện Alert.
+
+**Lý do:** User yêu cầu hiển thị link MP4 và mở được trong trình duyệt.
+
+## 2026-10-29 — Faphouse: bộ lọc chuyển sang bottom sheet
+
+**Files đã sửa:** `app/features/faphouse/screens/FaphouseScreen.tsx`, `app/features/faphouse/components/FaphouseFilterSheet.tsx` (mới), `app/features/faphouse/types.ts`; xóa `FaphouseFilterRow.tsx`.
+
+**Chi tiết:** Thay các hàng chip ở đầu danh sách bằng nút "Bộ lọc" mở popup `FaphouseFilterSheet` (Thể loại, Quốc gia, Diễn viên, Sắp xếp, nút Xóa lọc/Áp dụng), header hiển thị tóm tắt bộ lọc đang chọn giống `FilterScreen`.
+
+**Lý do:** User yêu cầu filter của `FaphouseScreen` popup giống `FilterScreen`.
+
+## 2026-10-29 — Faphouse mặc định ẩn, bật bằng mã ở Search, tắt ở Profile
+
+**Files đã sửa:** `app/features/faphouse/store/faphouseStore.ts` (mới), `app/features/faphouse/components/FaphouseSection.tsx`, `app/features/faphouse/hooks/useFaphouse.ts`, `app/features/search/screens/SearchScreen.tsx`, `app/features/profile/screens/ProfileScreen.tsx`, `App.tsx`, `app/utils/storage.ts`, `app/utils/constants.ts`
+
+**Chi tiết:** Section Faphouse chỉ hiển thị khi `isEnabled`; nhập `0601` ở Search để bật (lưu AsyncStorage, giữ sau khi đóng app); nút "Tắt Faphouse" ở Profile chỉ hiện khi đang bật, bấm sẽ tắt và nút tự biến mất. Query `useFaphouseLatest` chỉ chạy khi bật.
+
+**Lý do:** User yêu cầu ẩn Faphouse mặc định, mở khóa bằng mã và có nút tắt.
+

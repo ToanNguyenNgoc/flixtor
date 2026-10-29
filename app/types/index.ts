@@ -42,6 +42,7 @@ export interface KKEpisode {
   filename?: string;
   link_embed?: string;
   link_m3u8?: string;
+  link_mp4?: string; // Faphouse: file MP4 phát trực tiếp
   server_name?: string; // injected from server
 }
 
@@ -111,7 +112,7 @@ export interface KKDetailResponse {
 
 // ─── Video Source Types ────────────────────────────────────
 
-export type VideoSourceType = 'm3u8' | 'embed' | 'none';
+export type VideoSourceType = 'm3u8' | 'mp4' | 'embed' | 'none';
 
 export interface VideoSource {
   type: VideoSourceType;

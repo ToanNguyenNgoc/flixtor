@@ -5,6 +5,12 @@
 export const APP_NAME = 'Flixtor';
 export const APP_VERSION = '1.0.0';
 
+// ─── Faphouse API ─────────────────────────────────────────────
+export const FAPHOUSE_API_BASE_URL = 'https://api-faphouse.nntx.vn';
+export const FAPHOUSE_PAGE_SIZE = 15;
+/** Nhập mã này ở ô tìm kiếm để bật Faphouse. */
+export const FAPHOUSE_UNLOCK_CODE = '0601';
+
 // ─── Pagination ───────────────────────────────────────────────
 export const DEFAULT_PAGE_SIZE = 20;
 export const SEARCH_PAGE_SIZE = 30;

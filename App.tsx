@@ -16,6 +16,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import RootNavigator from '@/navigation/RootNavigator';
 import linking from '@/navigation/linking';
 import { useFavoriteStore } from '@/features/favorites/store/favoriteStore';
+import { useFaphouseStore } from '@/features/faphouse/store/faphouseStore';
 import { useWatchHistoryStore } from '@/features/history/store/watchHistoryStore';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { initializeApiServer } from '@/services/api/axiosClient';
@@ -69,6 +70,7 @@ export default function App() {
   const loadFavorites = useFavoriteStore(state => state.loadFavorites);
   const loadHistory = useWatchHistoryStore(state => state.loadHistory);
   const restoreSession = useAuthStore(state => state.restoreSession);
+  const initializeFaphouse = useFaphouseStore(state => state.initialize);
   const [isAppReady, setIsAppReady] = useState(false);
   const hasHiddenNativeSplashRef = useRef(false);
   const {
@@ -84,6 +86,7 @@ export default function App() {
       loadHistory(),
       initializeApiServer(),
       restoreSession(),
+      initializeFaphouse(),
     ]);
 
     initResults.forEach(result => {
@@ -91,7 +94,7 @@ export default function App() {
         console.warn('[App] Bootstrap task failed.', result.reason);
       }
     });
-  }, [loadFavorites, loadHistory, restoreSession]);
+  }, [initializeFaphouse, loadFavorites, loadHistory, restoreSession]);
 
   useEffect(() => {
     bootstrapApp().finally(() => {

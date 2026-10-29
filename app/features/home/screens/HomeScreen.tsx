@@ -41,6 +41,7 @@ import {
   useUserHistory,
 } from '@/features/history/hooks/useUserHistory';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import FaphouseSection from '@/features/faphouse/components/FaphouseSection';
 import { getUserHistoryErrorMessage } from '@/features/history/services/userHistoryService';
 import { useWatchHistoryStore } from '@/features/history/store/watchHistoryStore';
 
@@ -584,6 +585,7 @@ export default function HomeScreen() {
         keyExtractor={item => item.key}
         renderItem={renderSection}
         ListHeaderComponent={listHeader}
+        ListFooterComponent={FaphouseSection}
         ItemSeparatorComponent={SECTION_SEPARATOR}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}

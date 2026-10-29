@@ -28,13 +28,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "Flixtor",
-      in: window,
-      launchOptions: launchOptions
-    )
+    // Window được tạo và React Native được start trong SceneDelegate (UIScene lifecycle).
     FirebaseApp.configure()
     return true
   }
@@ -47,6 +41,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     supportedInterfaceOrientationsFor window: UIWindow?
   ) -> UIInterfaceOrientationMask {
     return Orientation.getOrientation()
+  }
+
+  func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let configuration = UISceneConfiguration(
+      name: "Default Configuration",
+      sessionRole: connectingSceneSession.role
+    )
+    configuration.delegateClass = SceneDelegate.self
+    return configuration
   }
 
   func application(

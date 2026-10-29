@@ -10,6 +10,8 @@ import LoginScreen from '@/features/auth/screens/LoginScreen';
 import RegisterScreen from '@/features/auth/screens/RegisterScreen';
 import ResetPasswordScreen from '@/features/auth/screens/ResetPasswordScreen';
 import HistoryScreen from '@/features/history/screens/HistoryScreen';
+import FaphouseScreen from '@/features/faphouse/screens/FaphouseScreen';
+import FaphouseDetailScreen from '@/features/faphouse/screens/FaphouseDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -54,6 +56,16 @@ export default function RootNavigator() {
       <Stack.Screen
         name="MovieDetail"
         component={MovieDetailScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="Faphouse"
+        component={FaphouseScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="FaphouseDetail"
+        component={FaphouseDetailScreen}
         options={{ animation: 'slide_from_right' }}
       />
 

@@ -1260,3 +1260,25 @@
 - **Mô tả**: Cho phép người dùng chọn bước tua double tap 5, 10 hoặc 15 giây trong player preferences thay vì cố định 10 giây.
 - **Files dự kiến**: `app/features/player/screens/WatchScreen.tsx`, `app/features/player/store/playerPreferencesStore.ts`, `app/features/profile/screens/ProfileScreen.tsx`
 - **Priority**: low
+
+### Faphouse Server-side Actor Filter
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm Faphouse (2026-10-29)
+- **Mô tả**: API `/api/public/movies` chưa nhận tham số lọc diễn viên nên app đang lọc phía client; khi backend hỗ trợ thì chuyển sang lọc phía server.
+- **Files dự kiến**: `app/features/faphouse/screens/FaphouseScreen.tsx`, `app/features/faphouse/services/faphouseService.ts`
+- **Priority**: medium
+
+### Faphouse Watch History
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm Faphouse (2026-10-29)
+- **Mô tả**: Lưu tiến độ xem và mục "Tiếp tục xem" cho phim Faphouse (hiện bỏ qua vì lịch sử gắn slug KKPhim).
+- **Files dự kiến**: `app/features/history/store/watchHistoryStore.ts`, `app/features/player/screens/WatchScreen.tsx`, `app/features/home/screens/HomeScreen.tsx`
+- **Priority**: medium
+
+### Faphouse Search
+- **Status**: proposed
+- **Nguồn**: follow-up sau khi thêm Faphouse (2026-10-29)
+- **Mô tả**: Thêm ô tìm kiếm trong `FaphouseScreen` dùng tham số `search` có sẵn của API.
+- **Files dự kiến**: `app/features/faphouse/screens/FaphouseScreen.tsx`
+- **Priority**: low
+

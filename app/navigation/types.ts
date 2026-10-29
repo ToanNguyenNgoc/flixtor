@@ -18,6 +18,8 @@ export type RootStackParamList = {
   ResetPassword: ResetPasswordRouteParams | undefined;
   History: undefined;
   MovieDetail: { slug: string };
+  Faphouse: undefined;
+  FaphouseDetail: { slug: string };
   Setting: undefined;
   Watch: {
     slug: string;
@@ -25,6 +27,8 @@ export type RootStackParamList = {
     serverName?: string;
     resumeProgress?: number;
     initialProgressSeconds?: number;
+    /** `faphouse`: lấy dữ liệu phim từ Faphouse API thay vì KKPhim. */
+    source?: 'faphouse';
   };
 };
 

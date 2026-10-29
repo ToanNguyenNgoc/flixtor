@@ -84,6 +84,8 @@ App navigator gate
               ├── ResetPassword (mở từ deeplink email hoặc navigate nội bộ)
               ├── History (mở từ Profile)
               ├── MovieDetail (slide_from_bottom)
+              ├── Faphouse (slide_from_right) — lưới phim + bộ lọc thể loại/quốc gia/diễn viên/sắp xếp
+              ├── FaphouseDetail (slide_from_right) — chi tiết phim, nút Xem → Watch với `source: 'faphouse'`
               ├── Setting (slide_from_right)
               └── Watch (fade, orientation handled inside screen)
 
@@ -187,6 +189,16 @@ Hooks và stores không cần sửa.
 - `authStore` có action dùng chung `setAuthSession(...)` để email login, register và Google login cùng persist session một kiểu; logout sẽ sign out thêm khỏi Google client khi phiên hiện tại đến từ Google
 
 ---
+
+### Faphouse (`app/features/faphouse/`)
+
+- Base URL nằm ở `FAPHOUSE_API_BASE_URL` (`app/utils/constants.ts`); `faphouseService.ts` dùng axios instance riêng (không dùng `axiosClient`) để không gắn Bearer token app vào server ngoài.
+- Endpoint: `GET /api/public/movies` (`sort` = latest|oldest|year_desc|year_asc, `genre`, `country`, `page`, `limit`), `/movies/:slug`, `/genres`, `/countries`, `/actors`. Response bọc `{ success, data }`, list có `items/page/hasNextPage`.
+- Bộ lọc mở bằng `FaphouseFilterSheet` (`@gorhom/bottom-sheet`, cùng pattern `FilterBottomSheet`): nút "Bộ lọc" ở header `FaphouseScreen`, state `FaphouseFilterState` (genre/country/actor/sort) chỉ áp dụng khi bấm "Áp dụng".
+- API list **không** có tham số lọc diễn viên → `FaphouseScreen` lọc diễn viên phía client trên các trang đã tải và tự tải thêm (tối đa 10 trang) nếu kết quả < 6.
+- Mặc định Faphouse **ẩn**. `useFaphouseStore` (Zustand, persist AsyncStorage key `@flixtor/faphouse_enabled`, hydrate trong `App.tsx` bootstrap) giữ cờ `isEnabled`. Nhập `FAPHOUSE_UNLOCK_CODE` (`0601`) ở ô tìm kiếm của `SearchScreen` → bật (ô tìm kiếm được xóa, hiện Alert). `ProfileScreen` hiện nút "Tắt Faphouse" (cả khi chưa/đã đăng nhập) chỉ khi đang bật; bấm → tắt, section và nút cùng biến mất.
+- HomeScreen render `FaphouseSection` ở `ListFooterComponent` (cuối danh sách); section tự gọi `useFaphouseLatest`, ẩn nếu rỗng/lỗi; "Xem thêm" → `Faphouse`.
+- Phát phim: `Watch` nhận param `source: 'faphouse'`; WatchScreen dùng `useFaphouseWatchDetail` (adapter `toWatchDetail` đưa MP4 vào `episodes[0].server_data[0].link_mp4`), `getEpisodeSource` trả `type: 'mp4'`. Với Faphouse, WatchScreen **không** lưu lịch sử xem (local và remote) vì lịch sử gắn với slug KKPhim.
 
 ## Screen Inventory
 

@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity, Keyboard,
+  Alert, View, Text, StyleSheet, TextInput, TouchableOpacity, Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,8 @@ import MovieGrid from '@/components/movie/MovieGrid';
 import MovieGridSkeleton from '@/components/movie/MovieGridSkeleton';
 import { Icon, PressableIconSvg } from '@/components/common';
 import { muiColor } from '@/themes';
+import { useFaphouseStore } from '@/features/faphouse/store/faphouseStore';
+import { FAPHOUSE_UNLOCK_CODE } from '@/utils/constants';
 
 type Route = RouteProp<MainTabParamList, 'Search'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -25,6 +27,20 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
   const [keyword, setKeyword] = useState(route.params?.keyword ?? '');
+  const enableFaphouse = useFaphouseStore(state => state.enable);
+
+  const handleChangeKeyword = useCallback((text: string) => {
+    if (text.trim() === FAPHOUSE_UNLOCK_CODE) {
+      setKeyword('');
+      Keyboard.dismiss();
+      enableFaphouse().then(() => {
+        Alert.alert('Đã bật Faphouse', 'Mục Faphouse sẽ hiển thị ở cuối trang chủ.');
+      });
+      return;
+    }
+
+    setKeyword(text);
+  }, [enableFaphouse]);
 
   React.useEffect(() => {
     const nextKeyword = route.params?.keyword ?? '';
@@ -101,7 +117,7 @@ export default function SearchScreen() {
             placeholder="Tìm phim, series, diễn viên..."
             placeholderTextColor={Colors.textMuted}
             value={keyword}
-            onChangeText={setKeyword}
+            onChangeText={handleChangeKeyword}
             returnKeyType="search"
             clearButtonMode="while-editing"
             autoCorrect={false}

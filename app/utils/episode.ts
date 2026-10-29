@@ -46,6 +46,10 @@ export function getEpisodeSource(episode?: KKEpisode): VideoSource {
     };
   }
 
+  if (episode.link_mp4) {
+    return { type: 'mp4', uri: episode.link_mp4 };
+  }
+
   // Native app should prefer m3u8. Embed is fallback but usually cannot be played natively.
   if (episode.link_embed) {
     return { type: 'embed', uri: episode.link_embed, fallbackUri: episode.link_embed };
